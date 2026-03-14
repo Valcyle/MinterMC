@@ -42,6 +42,27 @@ public interface Bot {
     String getEdition();
 
     /**
+     * Sets the username of the bot.
+     * 
+     * @param username The username of the bot
+     */
+    void setUsername(String username);
+
+    /**
+     * Sets the version of the Minecraft client.
+     * 
+     * @param version The version of the Minecraft client
+     */
+    void setVersion(String version);
+
+    /**
+     * Sets the edition of the Minecraft client.
+     * 
+     * @param edition The edition of the Minecraft client
+     */
+    void setEdition(String edition);
+
+    /**
      * Asynchronously moves the bot towards the specified coordinates.
      * <br>
      * This method itself does not perform pathfinding. It may emulate "linear
