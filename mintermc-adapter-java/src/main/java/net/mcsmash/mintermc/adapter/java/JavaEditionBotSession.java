@@ -33,26 +33,6 @@ public class JavaEditionBotSession extends BotSession {
     }
 
     @Override
-    public UUID getUniqueId() {
-        return this.uniqueId;
-    }
-
-    @Override
-    public String getUsername() {
-        return this.username;
-    }
-
-    @Override
-    public String getVersion() {
-        return this.version;
-    }
-
-    @Override
-    public String getEdition() {
-        return this.edition;
-    }
-
-    @Override
     public CompletableFuture<Void> moveTo(double x, double y, double z) {
         return CompletableFuture.runAsync(() -> {
             // TODO: Implement movement logic
