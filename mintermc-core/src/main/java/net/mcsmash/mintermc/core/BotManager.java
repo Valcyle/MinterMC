@@ -1,6 +1,5 @@
 package net.mcsmash.mintermc.core;
 
-import net.mcsmash.mintermc.api.Bot;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Collection;
@@ -34,7 +33,7 @@ public class BotManager {
     public BotSession getSessionByToken(String token) {
         return sessionsByToken.get(token);
     }
-    
+
     /**
      * Removes a session from the manager and shuts down its virtual thread.
      * 

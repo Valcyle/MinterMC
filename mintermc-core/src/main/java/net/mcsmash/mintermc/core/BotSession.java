@@ -42,14 +42,16 @@ public abstract class BotSession implements Bot, Runnable {
      * Starts the bot's dedicated Virtual Thread event loop.
      */
     public void startEventLoop() {
-        if (running) return;
+        if (running)
+            return;
         running = true;
         this.virtualThread = Thread.ofVirtual().name("bot-session-" + sessionToken.substring(0, 8)).start(this);
     }
 
     /**
      * The main event loop for this bot session.
-     * All protocol events and API requests routed to this bot will be processed sequentially here.
+     * All protocol events and API requests routed to this bot will be processed
+     * sequentially here.
      */
     @Override
     public void run() {
@@ -69,7 +71,7 @@ public abstract class BotSession implements Bot, Runnable {
         }
         cleanup();
     }
-    
+
     /**
      * Enqueues an action to be executed on this bot's Virtual Thread.
      *
@@ -90,14 +92,52 @@ public abstract class BotSession implements Bot, Runnable {
         // Specific adapter implementation will handle actual network disconnect
         handleNetworkDisconnect();
     }
-    
+
     /**
      * Called when the session event loop terminates.
      */
     protected abstract void cleanup();
-    
+
     /**
      * Instructs the protocol adapter to sever the connection to the server.
      */
     protected abstract void handleNetworkDisconnect();
+
+    @Override
+    public UUID getUniqueId() {
+        // TODO: Implement actual UUID retrieval from protocol
+        return null;
+    }
+
+    @Override
+    public String getUsername() {
+        // TODO: Implement actual username retrieval
+        return "Unknown";
+    }
+
+    @Override
+    public CompletableFuture<Void> moveTo(double x, double y, double z) {
+        // TODO: Implement movement packet handling
+        return CompletableFuture.completedFuture(null);
+    }
+
+    @Override
+    public Block getBlockAt(int x, int y, int z) {
+        // TODO: Implement world data access
+        return null;
+    }
+
+    @Override
+    public void chat(String message) {
+        // TODO: Implement chat packet sending
+        logger.info("Chating: {}", message);
+    }
+
+    /**
+     * @return true if the bot is connected to the server
+     */
+    @Override
+    public boolean isConnected() {
+        return running;
+    }
 }

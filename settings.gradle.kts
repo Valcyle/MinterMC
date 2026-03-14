@@ -10,7 +10,13 @@ dependencyResolutionManagement {
         mavenCentral()
         mavenLocal()
         // For MCProtocolLib and Cloudburst
-        maven { url = uri("https://repo.opencollab.dev/main/") }
+        maven { url = uri("https://jitpack.io/") }
+        maven("https://repo.opencollab.dev/maven-releases/") {
+            name = "opencollab-releases"
+        }
+        maven("https://repo.opencollab.dev/maven-snapshots/") {
+            name = "opencollab-snapshots"
+        }
     }
 }
 
