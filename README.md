@@ -61,6 +61,9 @@ public class MyPlugin implements MinterPlugin {
 
 This project is currently in early development. The gRPC server and plugin system are work in progress, but the Minecraft protocol adapters (Java Edition / Bedrock Edition) are not yet implemented.
 
+> [!NOTE] MinterMC uses [MCProtocolLib](https://github.com/dmulloy/MCProtocolLib) for Java Edition adapter implementation.
+> [!NOTE] MinterMC uses [Protocol](https://github.com/CloudburstMC/Protocol) for Bedrock Edition adapter implementation.
+
 # Author
 
 * [Valcyle](https://discord.gg/ckQGXN46pu)
