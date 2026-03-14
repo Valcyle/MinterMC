@@ -63,7 +63,6 @@ This project is currently in early development. The gRPC server and plugin syste
 
 > [!NOTE] 
 > MinterMC uses [MCProtocolLib](https://github.com/dmulloy/MCProtocolLib) for Java Edition adapter implementation.
-> [!NOTE] 
 > MinterMC uses [Protocol](https://github.com/CloudburstMC/Protocol) for Bedrock Edition adapter implementation.
 
 # Author
