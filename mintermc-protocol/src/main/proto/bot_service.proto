@@ -1,0 +1,104 @@
+syntax = "proto3";
+
+// mintermc-protocol will generate Java classes here
+option java_multiple_files = true;
+option java_package = "net.mcsmash.mintermc.protocol";
+option java_outer_classname = "BotServiceProto";
+
+// General service for MinterMC operations from the SDK
+service MinterBotService {
+    
+    // Log in a bot to a specific server
+    rpc Login (LoginRequest) returns (LoginResponse);
+    
+    // Retrieve the bot's current status and coordinates
+    rpc GetStatus (StatusRequest) returns (StatusResponse);
+    
+    // Move the bot to the specified coordinates (Simplified movement API)
+    rpc MoveTo (MoveRequest) returns (MoveResponse);
+    
+    // [IMPORTANT] Event subscription and command sending via bidirectional streaming
+    // This allows the SDK to hook into asynchronous events such as chat and block breaking
+    rpc EventStream (stream ClientCommand) returns (stream ServerEvent);
+}
+
+// ------------------------------------
+// Messages
+// ------------------------------------
+
+enum EditionType {
+    JAVA_EDITION = 0;
+    BEDROCK_EDITION = 1;
+}
+
+message LoginRequest {
+    string bot_name = 1; // Player name or UUID
+    EditionType target_edition = 2; // JE or BE
+    string host = 3; // Target server address
+    int32 port = 4; // Target server port
+    // TODO: Add actual MS account authentication tokens, etc.
+}
+
+message LoginResponse {
+    bool success = 1;
+    string error_message = 2;
+    string session_id = 3; // Session token used for subsequent operations
+}
+
+message StatusRequest {
+    string session_id = 1;
+}
+
+message StatusResponse {
+    double x = 1;
+    double y = 2;
+    double z = 3;
+    float yaw = 4;
+    float pitch = 5;
+    float health = 6;
+    int32 food = 7;
+}
+
+message MoveRequest {
+    string session_id = 1;
+    double target_x = 2;
+    double target_y = 3;
+    double target_z = 4;
+}
+
+message MoveResponse {
+    bool reached = 1; // Whether the bot reached the destination, failed, or was canceled
+}
+
+// Commands from SDK to the kernel (on the event stream)
+message ClientCommand {
+    string session_id = 1;
+    
+    oneof command_type {
+        string chat_message = 2; // Send a chat message
+        // Other lightweight commands
+    }
+}
+
+// Notifications from the kernel to the SDK (on the event stream)
+message ServerEvent {
+    
+    oneof event_type {
+        ChatMessage chat_received = 1;
+        BlockUpdated block_updated = 2;
+        // EntityMoved entity_moved = 3; etc.
+    }
+}
+
+message ChatMessage {
+    string sender = 1;
+    string content = 2;
+    int64 timestamp = 3;
+}
+
+message BlockUpdated {
+    int32 x = 1;
+    int32 y = 2;
+    int32 z = 3;
+    string new_material = 4;
+}
