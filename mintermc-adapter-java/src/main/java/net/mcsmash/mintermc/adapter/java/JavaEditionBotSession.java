@@ -1,9 +1,9 @@
 package net.mcsmash.mintermc.adapter.java;
 
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import net.mcsmash.mintermc.api.Block;
+import net.mcsmash.mintermc.core.BotOptions;
 import net.mcsmash.mintermc.core.BotSession;
 
 import org.geysermc.mcprotocollib.network.Session;
@@ -56,8 +56,9 @@ public class JavaEditionBotSession extends BotSession {
     }
 
     // Connection methods
-    public void connect(String host, int port, String version, String username, boolean onlineMode) {
-        PacketCodec packetCodec = new PacketCodec.Builder().minecraftVersion(version).build();
+    public void connect(String host, int port, String username, boolean onlineMode,
+            BotOptions options) {
+        PacketCodec packetCodec = new PacketCodec.Builder().minecraftVersion(options.version()).build();
         MinecraftProtocol protocol = new MinecraftProtocol(packetCodec);
     }
 }
