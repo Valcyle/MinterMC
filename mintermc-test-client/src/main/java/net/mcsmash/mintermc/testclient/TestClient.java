@@ -40,8 +40,7 @@ public class TestClient {
                 .usePlaintext()
                 .build();
 
-        MinterBotServiceGrpc.MinterBotServiceBlockingStub stub =
-                MinterBotServiceGrpc.newBlockingStub(channel);
+        MinterBotServiceGrpc.MinterBotServiceBlockingStub stub = MinterBotServiceGrpc.newBlockingStub(channel);
 
         try {
             testLogin(stub);
@@ -64,7 +63,7 @@ public class TestClient {
         LoginRequest loginRequest = LoginRequest.newBuilder()
                 .setBotName("TestBot")
                 .setTargetEdition(EditionType.JAVA_EDITION)
-                .setHost("mc.example.com")
+                .setHost("localhost")
                 .setPort(25565)
                 .build();
 
@@ -89,7 +88,7 @@ public class TestClient {
      * @param sessionId the session ID obtained from a successful login
      */
     private static void testGetStatus(MinterBotServiceGrpc.MinterBotServiceBlockingStub stub,
-                                      String sessionId) {
+            String sessionId) {
         logger.info("--- [Test 2] GetStatus ---");
 
         StatusRequest statusRequest = StatusRequest.newBuilder()
@@ -110,7 +109,7 @@ public class TestClient {
      * @param sessionId the session ID obtained from a successful login
      */
     private static void testMoveTo(MinterBotServiceGrpc.MinterBotServiceBlockingStub stub,
-                                   String sessionId) {
+            String sessionId) {
         logger.info("--- [Test 3] MoveTo ---");
 
         MoveRequest moveRequest = MoveRequest.newBuilder()

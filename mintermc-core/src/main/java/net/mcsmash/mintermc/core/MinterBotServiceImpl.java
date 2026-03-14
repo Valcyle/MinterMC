@@ -17,9 +17,11 @@ public class MinterBotServiceImpl extends MinterBotServiceGrpc.MinterBotServiceI
 
     private static final Logger logger = LoggerFactory.getLogger(MinterBotServiceImpl.class);
     private final BotManager botManager;
+    private final BotSessionFactory sessionFactory;
 
-    public MinterBotServiceImpl(BotManager botManager) {
+    public MinterBotServiceImpl(BotManager botManager, BotSessionFactory sessionFactory) {
         this.botManager = botManager;
+        this.sessionFactory = sessionFactory;
     }
 
     @Override
@@ -27,21 +29,32 @@ public class MinterBotServiceImpl extends MinterBotServiceGrpc.MinterBotServiceI
         logger.info("Received login request for bot: {} to {}:{}", 
             request.getBotName(), request.getHost(), request.getPort());
 
-        // Generate a simple token for this session
         String sessionToken = UUID.randomUUID().toString();
         
-        // TODO: The actual BotSession creation should be delegated to a factory
-        // that creates either a JavaEditionBotSession or BedrockEditionBotSession
-        // based on request.getTargetEdition().
-        // For now, we mock success.
+        try {
+            // Create the specific bot session via the factory
+            BotSession session = sessionFactory.create(sessionToken, request);
+            
+            // Register and start the virtual thread loop
+            botManager.registerSession(session);
+            session.startEventLoop();
 
-        LoginResponse response = LoginResponse.newBuilder()
-                .setSuccess(true)
-                .setSessionId(sessionToken)
-                .build();
+            LoginResponse response = LoginResponse.newBuilder()
+                    .setSuccess(true)
+                    .setSessionId(sessionToken)
+                    .build();
 
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+            
+        } catch (Exception e) {
+            logger.error("Failed to initialize bot session", e);
+            responseObserver.onNext(LoginResponse.newBuilder()
+                    .setSuccess(false)
+                    .setErrorMessage("Initialization failed: " + e.getMessage())
+                    .build());
+            responseObserver.onCompleted();
+        }
     }
 
     @Override

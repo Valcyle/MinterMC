@@ -8,7 +8,10 @@ import io.grpc.ServerBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.mcsmash.mintermc.core.MinterBotServiceImpl;
+import net.mcsmash.mintermc.core.BotSessionFactory;
+import net.mcsmash.mintermc.adapter.java.JavaEditionBotSession;
+import net.mcsmash.mintermc.core.BotOptions;
+import net.mcsmash.mintermc.protocol.EditionType;
 
 import java.io.IOException;
 
@@ -36,9 +39,35 @@ public class MinterServer {
         this.pluginManager.loadPlugins();
         this.pluginManager.enablePlugins();
         
+        // Factory that knows how to create specific adapter sessions
+        BotSessionFactory sessionFactory = (sessionToken, request) -> {
+            if (request.getTargetEdition() == EditionType.JAVA_EDITION) {
+                JavaEditionBotSession session = new JavaEditionBotSession(sessionToken);
+                
+                // Trigger connection (this is blocking/network-heavy, 
+                // but MinterBotServiceImpl calls this inside its own context)
+                // For now we use default options or map from request if available
+                BotOptions options = new BotOptions.Builder()
+                        .version("1.21.4") // Default version
+                        .build();
+                
+                session.connect(
+                    request.getHost(), 
+                    request.getPort(), 
+                    request.getBotName(), 
+                    false, // Offline mode for now to simplify testing
+                    options
+                );
+                
+                return session;
+            } else {
+                throw new UnsupportedOperationException("Bedrock Edition is not yet supported");
+            }
+        };
+
         // MinterBotServiceImpl handles the gRPC endpoints
         this.server = ServerBuilder.forPort(port)
-                .addService(new MinterBotServiceImpl(botManager))
+                .addService(new MinterBotServiceImpl(botManager, sessionFactory))
                 .build();
     }
 
