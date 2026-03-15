@@ -45,3 +45,6 @@ Thumbs.db
 
 # MinterMC specific
 plugins/
+
+#test
+examples/js/node_modules

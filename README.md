@@ -1,15 +1,17 @@
 # MinterMC
 
+Use any programming language to create Minecraft bots.
+
 > [!CAUTION]
-> This project is currently in early development. This project is not yet ready for production use.
-> This project is not affiliated with Mojang Studios or Microsoft.
+> This project is currently in early development.
 
 A universal Minecraft bot kernel that abstracts the differences between **Java Edition** and **Bedrock Edition**.  
 Exposes a single **gRPC API** so bots can be controlled from any programming language via an SDK.
 
 # DEMO
 
-> Coming soon
+Python, C++, JavaScript and Java examples are available.
+Check out [`examples`](examples/) folder for more examples.
 
 # Features
 
