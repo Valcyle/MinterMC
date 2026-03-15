@@ -3,9 +3,10 @@
 [![Created at](https://img.shields.io/github/created-at/Valcyle/MinterMC)](https://github.com/Valcyle/MinterMC)
 [![Last commit](https://img.shields.io/github/last-commit/Valcyle/MinterMC
 )](https://github.com/Valcyle/MinterMC/commits/main/)
+===========
 Use any programming language to create Minecraft bots.
 
-> [!INFO]
+> [!NOTE]
 > This project is currently in early development. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before contributing.
 
 A universal Minecraft bot kernel that abstracts the differences between **Java Edition** and **Bedrock Edition**.  
