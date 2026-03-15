@@ -58,7 +58,7 @@ public:
         StatusResponse response;
         ClientContext context;
 
-        Status status = stub_->GetStatus(&context, request, &status_response);
+        Status status = stub_->GetStatus(&context, request, &response);
 
         if (status.ok()) {
             std::cout << "Current Position: (" << response.x() << ", " << response.y() << ", " << response.z() << ")" << std::endl;
