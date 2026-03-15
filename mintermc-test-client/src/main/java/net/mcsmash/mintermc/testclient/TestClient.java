@@ -61,7 +61,7 @@ public class TestClient {
         logger.info("--- [Test 1] Login ---");
 
         LoginRequest loginRequest = LoginRequest.newBuilder()
-                .setBotName("TestBot")
+                .setBotName("Java_Bot")
                 .setTargetEdition(EditionType.JAVA_EDITION)
                 .setHost("localhost")
                 .setPort(25565)
