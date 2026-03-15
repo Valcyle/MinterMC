@@ -1,5 +1,8 @@
 # MinterMC
-
+[![Discord](https://img.shields.io/discord/872775092218761226?logo=discord&color=7389D8)](https://discord.gg/ckQGXN46pu)
+[![Created at](https://img.shields.io/github/created-at/Valcyle/MinterMC)](https://github.com/Valcyle/MinterMC)
+[![Last commit](https://img.shields.io/github/last-commit/Valcyle/MinterMC
+)](https://github.com/Valcyle/MinterMC/commits/main/)
 Use any programming language to create Minecraft bots.
 
 > [!INFO]
