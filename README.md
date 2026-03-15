@@ -2,14 +2,15 @@
 
 Use any programming language to create Minecraft bots.
 
-> [!CAUTION]
-> This project is currently in early development.
+> [!INFO]
+> This project is currently in early development. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before contributing.
 
 A universal Minecraft bot kernel that abstracts the differences between **Java Edition** and **Bedrock Edition**.  
 Exposes a single **gRPC API** so bots can be controlled from any programming language via an SDK.
 
 # DEMO
 
+Currently joining java edition servers is supported.
 Python, C++, JavaScript and Java examples are available.
 Check out [`examples`](examples/) folder for more examples.
 
