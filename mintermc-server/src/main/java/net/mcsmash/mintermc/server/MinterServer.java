@@ -22,7 +22,7 @@ import java.io.IOException;
  * and starts the gRPC server to accept connections from SDKs.
  */
 public class MinterServer {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(MinterServer.class);
 
     private final int port;
@@ -34,31 +34,30 @@ public class MinterServer {
         this.port = port;
         this.botManager = new BotManager();
         this.pluginManager = new PluginManager(new java.io.File("plugins"));
-        
+
         // Load plugins before starting the server
         this.pluginManager.loadPlugins();
         this.pluginManager.enablePlugins();
-        
+
         // Factory that knows how to create specific adapter sessions
         BotSessionFactory sessionFactory = (sessionToken, request) -> {
             if (request.getTargetEdition() == EditionType.JAVA_EDITION) {
                 JavaEditionBotSession session = new JavaEditionBotSession(sessionToken);
-                
-                // Trigger connection (this is blocking/network-heavy, 
+
+                // Trigger connection (this is blocking/network-heavy,
                 // but MinterBotServiceImpl calls this inside its own context)
                 // For now we use default options or map from request if available
                 BotOptions options = new BotOptions.Builder()
                         .version("1.21.4") // Default version
                         .build();
-                
+
                 session.connect(
-                    request.getHost(), 
-                    request.getPort(), 
-                    request.getBotName(), 
-                    false, // Offline mode for now to simplify testing
-                    options
-                );
-                
+                        request.getHost(),
+                        request.getPort(),
+                        request.getBotName(),
+                        false, // Offline mode for now to simplify testing
+                        options);
+
                 return session;
             } else {
                 throw new UnsupportedOperationException("Bedrock Edition is not yet supported");
@@ -77,7 +76,7 @@ public class MinterServer {
     public void start() throws IOException, InterruptedException {
         server.start();
         logger.info("MinterMC gRPC Server started, listening on {}", port);
-        
+
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             logger.info("Shutting down gRPC server since JVM is shutting down");
             try {
@@ -87,7 +86,7 @@ public class MinterServer {
             }
             logger.info("Server shut down");
         }));
-        
+
         server.awaitTermination();
     }
 
@@ -105,7 +104,7 @@ public class MinterServer {
         if (args.length > 0) {
             port = Integer.parseInt(args[0]);
         }
-        
+
         MinterServer minterServer = new MinterServer(port);
         minterServer.start();
     }

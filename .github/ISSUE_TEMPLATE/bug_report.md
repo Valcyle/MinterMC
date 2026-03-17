@@ -1,7 +1,7 @@
 ---
 name: "🐞 Bug Report"
 about: Report a bug to help us improve MinterMC
-title: "[BUG] <Short description>"
+title: "<Short description>"
 labels: bug
 assignees: ''
 

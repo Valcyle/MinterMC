@@ -1,7 +1,7 @@
 ---
 name: "✨ Feature Request"
 about: Suggest an idea for MinterMC
-title: "[FEATURE] <Short description>"
+title: "<Short description>"
 labels: enhancement, new feature
 assignees: ''
 
