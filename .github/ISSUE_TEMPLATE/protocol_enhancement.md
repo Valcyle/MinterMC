@@ -1,7 +1,7 @@
 ---
 name: "📡 Protocol Enhancement"
 about: Suggest changes to the .proto definitions or gRPC services
-title: "[PROTO] <Service or Message name>"
+title: "<Short description>"
 labels: protocol, gRPC
 ---
 
