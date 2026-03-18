@@ -24,6 +24,12 @@ public class TestClient {
     /** Target server port */
     private static final int PORT = 50051;
 
+    /** Number of bots to connect */
+    private static final int BOT_COUNT = 500;
+
+    /** Bot name prefix */
+    private static final String BOT_NAME = "Java_Bot";
+
     /**
      * Entry point for the test client.
      *
@@ -43,7 +49,10 @@ public class TestClient {
         MinterBotServiceGrpc.MinterBotServiceBlockingStub stub = MinterBotServiceGrpc.newBlockingStub(channel);
 
         try {
-            testLogin(stub);
+            for (int i = 1; i <= BOT_COUNT; i++) {
+                testLogin(stub, i);
+            }
+            Thread.sleep(20);
         } finally {
             // Always shut down the channel cleanly
             logger.info("Shutting down channel...");
@@ -57,11 +66,11 @@ public class TestClient {
      *
      * @param stub the blocking gRPC stub to use for calls
      */
-    private static void testLogin(MinterBotServiceGrpc.MinterBotServiceBlockingStub stub) {
+    private static void testLogin(MinterBotServiceGrpc.MinterBotServiceBlockingStub stub, int i) {
         logger.info("--- [Test 1] Login ---");
 
         LoginRequest loginRequest = LoginRequest.newBuilder()
-                .setBotName("Java_Bot")
+                .setBotName(BOT_NAME + "_" + i)
                 .setTargetEdition(EditionType.JAVA_EDITION)
                 .setHost("localhost")
                 .setPort(25565)
