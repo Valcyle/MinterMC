@@ -13,7 +13,7 @@ A universal Minecraft bot kernel that abstracts the differences between **Java E
 Exposes a single **gRPC API** so bots can be controlled from any programming language via an SDK.
 
 # DEMO
-[<img src="https://img.youtube.com/vi/8_sQTFVja0g/0.jpg" alt="tutorial 1" width="200">](https://www.youtube.com/watch?v=8_sQTFVja0g)
+[<img src="https://img.youtube.com/vi/8_sQTFVja0g/0.jpg" alt="1500 bots joining using MinterMC" width="200">](https://www.youtube.com/watch?v=8_sQTFVja0g)
 
 Currently joining java edition servers is supported.
 Python, C++, JavaScript and Java examples are available.
