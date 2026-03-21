@@ -1,5 +1,6 @@
 package net.mcsmash.mintermc.core;
 
+import net.mcsmash.mintermc.api.math.Vector3;
 import net.mcsmash.mintermc.protocol.*;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
@@ -26,15 +27,15 @@ public class MinterBotServiceImpl extends MinterBotServiceGrpc.MinterBotServiceI
 
     @Override
     public void login(LoginRequest request, StreamObserver<LoginResponse> responseObserver) {
-        logger.info("Received login request for bot: {} to {}:{}", 
-            request.getBotName(), request.getHost(), request.getPort());
+        logger.info("Received login request for bot: {} to {}:{}",
+                request.getBotName(), request.getHost(), request.getPort());
 
         String sessionToken = UUID.randomUUID().toString();
-        
+
         try {
             // Create the specific bot session via the factory
             BotSession session = sessionFactory.create(sessionToken, request);
-            
+
             // Register and start the virtual thread loop
             botManager.registerSession(session);
             session.startEventLoop();
@@ -46,7 +47,7 @@ public class MinterBotServiceImpl extends MinterBotServiceGrpc.MinterBotServiceI
 
             responseObserver.onNext(response);
             responseObserver.onCompleted();
-            
+
         } catch (Exception e) {
             logger.error("Failed to initialize bot session", e);
             responseObserver.onNext(LoginResponse.newBuilder()
@@ -93,7 +94,7 @@ public class MinterBotServiceImpl extends MinterBotServiceGrpc.MinterBotServiceI
 
         // Delegate the high-level movement to the Virtual Thread event loop.
         // We use the CompletableFuture to detect completion.
-        session.moveTo(request.getTargetX(), request.getTargetY(), request.getTargetZ())
+        session.moveTo(new Vector3(request.getTargetX(), request.getTargetY(), request.getTargetZ()))
                 .whenComplete((result, ex) -> {
                     if (ex != null) {
                         logger.error("Movement failed for session {}", request.getSessionId(), ex);
