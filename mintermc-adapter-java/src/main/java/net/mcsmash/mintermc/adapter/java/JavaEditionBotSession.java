@@ -22,6 +22,8 @@ import org.geysermc.mcprotocollib.protocol.MinecraftConstants;
 import org.geysermc.mcprotocollib.protocol.MinecraftProtocol;
 import org.geysermc.mcprotocollib.network.factory.ClientNetworkSessionFactory;
 import org.geysermc.mcprotocollib.network.packet.Packet;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.player.ClientboundPlayerPositionPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.player.ClientboundSetHealthPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,12 +57,6 @@ public class JavaEditionBotSession extends BotSession {
     @Override
     public Block getBlockAt(Vector3 position) {
         // TODO: Implement block retrieval logic
-        return null;
-    }
-
-    @Override
-    public Location getLocation() {
-        // TODO: Implement location retrieval logic
         return null;
     }
 
@@ -115,7 +111,18 @@ public class JavaEditionBotSession extends BotSession {
         this.session.addListener(new SessionAdapter() {
             @Override
             public void packetReceived(Session session, Packet packet) {
-                logger.debug("Received packet: {}", packet.getClass().getSimpleName());
+                // Update position
+                if (packet instanceof ClientboundPlayerPositionPacket p) {
+                    double[] pos = p.getPosition().toArray();
+                    Vector3 vector3 = new Vector3(pos[0], pos[1], pos[2]);
+                    setLocation(new Location(vector3, (float) p.getYRot(), (float) p.getXRot()));
+                    logger.info("Position updated: {}", vector3);
+                }
+                // Update health
+                else if (packet instanceof ClientboundSetHealthPacket p) {
+                    setHealth(p.getHealth());
+                    logger.info("Health updated: {}", p.getHealth());
+                }
             }
 
             @Override

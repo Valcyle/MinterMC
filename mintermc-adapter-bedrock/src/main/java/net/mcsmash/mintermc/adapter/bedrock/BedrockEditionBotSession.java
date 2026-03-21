@@ -5,7 +5,6 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import net.mcsmash.mintermc.api.block.Block;
-import net.mcsmash.mintermc.api.math.Location;
 import net.mcsmash.mintermc.api.math.Vector3;
 import net.mcsmash.mintermc.core.BotOptions;
 import net.mcsmash.mintermc.core.BotSession;
@@ -54,11 +53,6 @@ public class BedrockEditionBotSession extends BotSession {
         return null;
     }
 
-    @Override
-    public Location getLocation() {
-        // TODO: Implement location retrieval logic
-        return null;
-    }
 
     @Override
     public void chat(String message) {
