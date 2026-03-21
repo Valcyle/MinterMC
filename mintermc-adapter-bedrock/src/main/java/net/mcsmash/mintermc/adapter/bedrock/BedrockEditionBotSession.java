@@ -4,7 +4,7 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioDatagramChannel;
-import net.mcsmash.mintermc.api.Block;
+import net.mcsmash.mintermc.api.block.Block;
 import net.mcsmash.mintermc.core.BotOptions;
 import net.mcsmash.mintermc.core.BotSession;
 import org.cloudburstmc.netty.channel.raknet.RakChannelFactory;
@@ -13,13 +13,11 @@ import org.cloudburstmc.protocol.bedrock.BedrockClientSession;
 import org.cloudburstmc.protocol.bedrock.codec.v944.Bedrock_v944;
 import org.cloudburstmc.protocol.bedrock.netty.initializer.BedrockClientInitializer;
 import org.cloudburstmc.protocol.bedrock.packet.LoginPacket;
-import org.cloudburstmc.protocol.common.PacketHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ThreadLocalRandom;
 
 public class BedrockEditionBotSession extends BotSession {
     private static final Logger logger = LoggerFactory.getLogger(BedrockEditionBotSession.class);

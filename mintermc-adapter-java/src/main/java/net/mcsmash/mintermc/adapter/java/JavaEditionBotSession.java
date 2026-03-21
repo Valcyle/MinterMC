@@ -3,7 +3,7 @@ package net.mcsmash.mintermc.adapter.java;
 import java.util.concurrent.CompletableFuture;
 
 import net.lenni0451.commons.httpclient.HttpClient;
-import net.mcsmash.mintermc.api.Block;
+import net.mcsmash.mintermc.api.block.Block;
 import net.mcsmash.mintermc.core.BotOptions;
 import net.mcsmash.mintermc.core.BotSession;
 import net.raphimc.minecraftauth.MinecraftAuth;

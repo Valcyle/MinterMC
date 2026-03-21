@@ -1,7 +1,7 @@
 package net.mcsmash.mintermc.core;
 
 import net.mcsmash.mintermc.api.Bot;
-import net.mcsmash.mintermc.api.Block;
+import net.mcsmash.mintermc.api.block.Block;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;

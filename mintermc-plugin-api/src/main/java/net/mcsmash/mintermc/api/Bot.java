@@ -1,5 +1,7 @@
 package net.mcsmash.mintermc.api;
 
+import net.mcsmash.mintermc.api.block.Block;
+
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
