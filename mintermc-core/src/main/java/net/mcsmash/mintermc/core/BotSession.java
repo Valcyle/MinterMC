@@ -31,7 +31,8 @@ public abstract class BotSession implements Bot, Runnable {
     private String username; // username of the bot
     private String version; // version of the bot
     private String edition; // edition of the bot
-    private Location location; // location of the bot
+    private volatile Location location = new Location(new Vector3(0, 0, 0), 0, 0);
+    private volatile float health = 20.0f;
 
     /**
      * @param sessionToken The authentication token assigned to this specific bot
@@ -150,11 +151,46 @@ public abstract class BotSession implements Bot, Runnable {
         this.edition = edition;
     }
 
+
+    @Override
+    public Location getLocation() {
+        return this.location;
+    }
+
+    /**
+     * Updates the bot's current location.
+     * <br>
+     * Usually called by the protocol adapter when it receives a position packet.
+     *
+     * @param location The new location
+     */
+    public void setLocation(Location location) {
+        this.location = location;
+    }
+
+    /**
+     * Updates the bot's current health.
+     * <br>
+     * Usually called by the protocol adapter when it receives a health packet.
+     *
+     * @param health The new health value
+     */
+    public void setHealth(float health) {
+        this.health = health;
+    }
+
+    /**
+     * Retrieves the bot's current health.
+     *
+     * @return The health value
+     */
+    public float getHealth() {
+        return this.health;
+    }
+
     public abstract CompletableFuture<Void> moveTo(Vector3 position);
 
     public abstract Block getBlockAt(Vector3 position);
-
-    public abstract Location getLocation();
 
     public abstract void chat(String message);
 

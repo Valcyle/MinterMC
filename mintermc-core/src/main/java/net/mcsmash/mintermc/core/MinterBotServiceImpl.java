@@ -1,5 +1,6 @@
 package net.mcsmash.mintermc.core;
 
+import net.mcsmash.mintermc.api.math.Location;
 import net.mcsmash.mintermc.api.math.Vector3;
 import net.mcsmash.mintermc.protocol.*;
 import io.grpc.stub.StreamObserver;
@@ -69,12 +70,14 @@ public class MinterBotServiceImpl extends MinterBotServiceGrpc.MinterBotServiceI
             return;
         }
 
-        // We would fetch coordinates from the BotSession state here.
+        Location loc = session.getLocation();
+        Vector3 pos = loc.getPosition();
+
         StatusResponse response = StatusResponse.newBuilder()
-                .setX(0.0)
-                .setY(64.0)
-                .setZ(0.0)
-                .setHealth(20.0f)
+                .setX(pos.getX())
+                .setY(pos.getY())
+                .setZ(pos.getZ())
+                .setHealth(session.getHealth())
                 .build();
 
         responseObserver.onNext(response);
