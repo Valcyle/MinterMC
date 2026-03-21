@@ -1,5 +1,6 @@
 package net.mcsmash.mintermc.server;
 
+import net.mcsmash.mintermc.adapter.bedrock.BedrockEditionBotSession;
 import net.mcsmash.mintermc.core.BotManager;
 import net.mcsmash.mintermc.core.MinterBotServiceImpl;
 import net.mcsmash.mintermc.core.PluginManager;
@@ -59,8 +60,23 @@ public class MinterServer {
                         options);
 
                 return session;
+            } else if(request.getTargetEdition() == EditionType.BEDROCK_EDITION){
+                BedrockEditionBotSession session = new BedrockEditionBotSession(sessionToken);
+
+                BotOptions options = new BotOptions.Builder()
+                        .version("1.26.3")
+                        .build();
+
+                session.connect(
+                        request.getHost(),
+                        request.getPort(),
+                        request.getBotName(),
+                        false,
+                        options);
+
+                return session;
             } else {
-                throw new UnsupportedOperationException("Bedrock Edition is not yet supported");
+                throw new UnsupportedOperationException("Requested edition is not supported");
             }
         };
 
