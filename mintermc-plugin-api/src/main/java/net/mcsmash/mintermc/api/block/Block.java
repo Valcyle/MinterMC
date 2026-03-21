@@ -1,4 +1,4 @@
-package net.mcsmash.mintermc.api;
+package net.mcsmash.mintermc.api.block;
 
 /**
  * Represents a single block within the virtualized world.
