@@ -1,6 +1,8 @@
 package net.mcsmash.mintermc.api;
 
 import net.mcsmash.mintermc.api.block.Block;
+import net.mcsmash.mintermc.api.math.Location;
+import net.mcsmash.mintermc.api.math.Vector3;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -74,12 +76,10 @@ public interface Bot {
      * overridden by plugins
      * by combining this interface with surrounding block data.
      *
-     * @param x The target X coordinate
-     * @param y The target Y coordinate
-     * @param z The target Z coordinate
+     * @param position The position to move to
      * @return A CompletableFuture representing the completion of the movement
      */
-    CompletableFuture<Void> moveTo(double x, double y, double z);
+    CompletableFuture<Void> moveTo(Vector3 position);
 
     /**
      * Retrieves the block data around the bot that is currently recognized.
@@ -87,12 +87,17 @@ public interface Bot {
      * If an uncached area is requested, an exception may be thrown or an empty/air
      * block will be returned (depending on implementation).
      *
-     * @param x The target X coordinate
-     * @param y The target Y coordinate
-     * @param z The target Z coordinate
+     * @param position The position to get the block at
      * @return The block information at the specified coordinates
      */
-    Block getBlockAt(int x, int y, int z);
+    Block getBlockAt(Vector3 position);
+
+    /**
+     * Retrieves the location of the bot.
+     * 
+     * @return The location of the bot
+     */
+    Location getLocation();
 
     /**
      * Sends a message to the in-game chat.
