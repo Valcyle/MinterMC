@@ -6,5 +6,5 @@ dependencies {
     implementation(project(":mintermc-core"))
     
     // Cloudburst Protocol (BE)
-    // implementation("org.cloudburstmc.protocol:bedrock:3.0.0.Beta1-SNAPSHOT") // Example version
+    implementation("org.cloudburstmc.protocol:bedrock-connection:3.0.0.Beta12-SNAPSHOT")
 }
