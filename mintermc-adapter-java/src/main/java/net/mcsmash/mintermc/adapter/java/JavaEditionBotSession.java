@@ -4,6 +4,8 @@ import java.util.concurrent.CompletableFuture;
 
 import net.lenni0451.commons.httpclient.HttpClient;
 import net.mcsmash.mintermc.api.block.Block;
+import net.mcsmash.mintermc.api.math.Location;
+import net.mcsmash.mintermc.api.math.Vector3;
 import net.mcsmash.mintermc.core.BotOptions;
 import net.mcsmash.mintermc.core.BotSession;
 import net.raphimc.minecraftauth.MinecraftAuth;
@@ -44,15 +46,21 @@ public class JavaEditionBotSession extends BotSession {
     }
 
     @Override
-    public CompletableFuture<Void> moveTo(double x, double y, double z) {
+    public CompletableFuture<Void> moveTo(Vector3 position) {
         return CompletableFuture.runAsync(() -> {
             // TODO: Implement movement logic
         });
     }
 
     @Override
-    public Block getBlockAt(int x, int y, int z) {
+    public Block getBlockAt(Vector3 position) {
         // TODO: Implement block retrieval logic
+        return null;
+    }
+
+    @Override
+    public Location getLocation() {
+        // TODO: Implement location retrieval logic
         return null;
     }
 

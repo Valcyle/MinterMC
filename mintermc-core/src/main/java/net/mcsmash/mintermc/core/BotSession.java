@@ -2,6 +2,9 @@ package net.mcsmash.mintermc.core;
 
 import net.mcsmash.mintermc.api.Bot;
 import net.mcsmash.mintermc.api.block.Block;
+import net.mcsmash.mintermc.api.math.Location;
+import net.mcsmash.mintermc.api.math.Vector3;
+
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -28,6 +31,7 @@ public abstract class BotSession implements Bot, Runnable {
     private String username; // username of the bot
     private String version; // version of the bot
     private String edition; // edition of the bot
+    private Location location; // location of the bot
 
     /**
      * @param sessionToken The authentication token assigned to this specific bot
@@ -146,9 +150,11 @@ public abstract class BotSession implements Bot, Runnable {
         this.edition = edition;
     }
 
-    public abstract CompletableFuture<Void> moveTo(double x, double y, double z);
+    public abstract CompletableFuture<Void> moveTo(Vector3 position);
 
-    public abstract Block getBlockAt(int x, int y, int z);
+    public abstract Block getBlockAt(Vector3 position);
+
+    public abstract Location getLocation();
 
     public abstract void chat(String message);
 
