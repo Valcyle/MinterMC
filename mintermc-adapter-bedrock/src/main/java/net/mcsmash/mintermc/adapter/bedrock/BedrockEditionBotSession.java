@@ -8,9 +8,11 @@ import net.mcsmash.mintermc.api.Block;
 import net.mcsmash.mintermc.core.BotOptions;
 import net.mcsmash.mintermc.core.BotSession;
 import org.cloudburstmc.netty.channel.raknet.RakChannelFactory;
+import org.cloudburstmc.netty.channel.raknet.config.RakChannelOption;
 import org.cloudburstmc.protocol.bedrock.BedrockClientSession;
 import org.cloudburstmc.protocol.bedrock.codec.v944.Bedrock_v944;
 import org.cloudburstmc.protocol.bedrock.netty.initializer.BedrockClientInitializer;
+import org.cloudburstmc.protocol.bedrock.packet.LoginPacket;
 import org.cloudburstmc.protocol.common.PacketHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,8 +91,10 @@ public class BedrockEditionBotSession extends BotSession {
                         session.setCodec(Bedrock_v944.CODEC);
                         //TODO: Implement packet handler
 //                        session.setPacketHandler(null);
+                        session.sendPacketImmediately(new LoginPacket());
                     }
                 })
+                .option(RakChannelOption.RAK_PROTOCOL_VERSION, 11)
                 .connect(new InetSocketAddress(host, port))
                 .syncUninterruptibly();
     }
