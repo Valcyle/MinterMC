@@ -5,6 +5,8 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import net.mcsmash.mintermc.api.block.Block;
+import net.mcsmash.mintermc.api.math.Location;
+import net.mcsmash.mintermc.api.math.Vector3;
 import net.mcsmash.mintermc.core.BotOptions;
 import net.mcsmash.mintermc.core.BotSession;
 import org.cloudburstmc.netty.channel.raknet.RakChannelFactory;
@@ -40,15 +42,21 @@ public class BedrockEditionBotSession extends BotSession {
     }
 
     @Override
-    public CompletableFuture<Void> moveTo(double x, double y, double z) {
+    public CompletableFuture<Void> moveTo(Vector3 position) {
         return CompletableFuture.runAsync(() -> {
             // TODO: Implement movement logic
         });
     }
 
     @Override
-    public Block getBlockAt(int x, int y, int z) {
+    public Block getBlockAt(Vector3 position) {
         // TODO: Implement block retrieval logic
+        return null;
+    }
+
+    @Override
+    public Location getLocation() {
+        // TODO: Implement location retrieval logic
         return null;
     }
 
@@ -66,7 +74,7 @@ public class BedrockEditionBotSession extends BotSession {
     public void connect(String host, int port, String username, boolean onlineMode,
             BotOptions options) {
         InetSocketAddress bindAddress = new InetSocketAddress("0.0.0.0", 0);
-        //Protocol bedrock client
+        // Protocol bedrock client
 
         // Online mode authentication
         if (onlineMode) {
@@ -85,10 +93,10 @@ public class BedrockEditionBotSession extends BotSession {
                 .handler(new BedrockClientInitializer() {
                     @Override
                     protected void initSession(BedrockClientSession session) {
-                        //codec setting ex for latest
+                        // codec setting ex for latest
                         session.setCodec(Bedrock_v944.CODEC);
-                        //TODO: Implement packet handler
-//                        session.setPacketHandler(null);
+                        // TODO: Implement packet handler
+                        // session.setPacketHandler(null);
                         session.sendPacketImmediately(new LoginPacket());
                     }
                 })
