@@ -91,3 +91,25 @@ We value stability.
 
 * Discussions: For general ideas and architecture talks.
 * Issues: For bugs and specific feature tasks.
+
+---
+
+## Disclaimer
+
+**Official Minecraft Disclaimer**
+
+**NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.**
+
+This project, **MinterMC**, is an independent third-party tool and is not affiliated with, endorsed by, or integrated with Mojang AB or Microsoft Corporation. Minecraft is a trademark of Mojang AB.
+
+**EULA Compliance**
+
+MinterMC is developed in accordance with the [Minecraft End User License Agreement](https://www.minecraft.net/en-us/eula) and the [Brand and Asset Guidelines](https://www.minecraft.net/en-us/usage-guidelines).
+
+* This tool is a "Service" and "Tool" as defined in the EULA.
+* It does not distribute any official Minecraft binaries or assets.
+* It is intended for educational, research, and development purposes.
+
+**Limitation of Liability**
+
+The developers of MinterMC are not responsible for any account bans, server blacklists, or other consequences resulting from the use of this software. By using this tool, you agree to comply with the terms of service of any Minecraft server you connect to.
