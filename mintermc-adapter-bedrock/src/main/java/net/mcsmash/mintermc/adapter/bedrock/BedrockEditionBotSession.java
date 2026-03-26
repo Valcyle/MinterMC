@@ -4,9 +4,10 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioDatagramChannel;
+import net.mcsmash.mintermc.adapter.bedrock.network.BedrockLoginHelper;
 import net.mcsmash.mintermc.api.block.Block;
+import net.mcsmash.mintermc.api.bot.BotOptions;
 import net.mcsmash.mintermc.api.math.Vector3;
-import net.mcsmash.mintermc.core.BotOptions;
 import net.mcsmash.mintermc.core.BotSession;
 import org.cloudburstmc.netty.channel.raknet.RakChannelFactory;
 import org.cloudburstmc.netty.channel.raknet.config.RakChannelOption;
@@ -23,7 +24,6 @@ import java.util.concurrent.CompletableFuture;
 public class BedrockEditionBotSession extends BotSession {
     private static final Logger logger = LoggerFactory.getLogger(BedrockEditionBotSession.class);
     // Protocol bot session
-    private BedrockClientSession session;
 
     public BedrockEditionBotSession(String sessionToken) {
         super(sessionToken);
@@ -53,7 +53,6 @@ public class BedrockEditionBotSession extends BotSession {
         return null;
     }
 
-
     @Override
     public void chat(String message) {
         // TODO: Implement chat logic
@@ -61,7 +60,9 @@ public class BedrockEditionBotSession extends BotSession {
 
     @Override
     public boolean isConnected() {
-        return this.session != null && this.session.isConnected();
+        // return this.session != null && this.session.isConnected();
+        // TODO: Implement connection check
+        return true;
     }
 
     // Connection methods
@@ -69,13 +70,6 @@ public class BedrockEditionBotSession extends BotSession {
             BotOptions options) {
         InetSocketAddress bindAddress = new InetSocketAddress("0.0.0.0", 0);
         // Protocol bedrock client
-
-        // Online mode authentication
-        if (onlineMode) {
-            // TODO: Implement online mode authentication
-        } else {
-
-        }
 
         this.setUsername(username);
         this.setVersion(options.version());
@@ -91,7 +85,12 @@ public class BedrockEditionBotSession extends BotSession {
                         session.setCodec(Bedrock_v944.CODEC);
                         // TODO: Implement packet handler
                         // session.setPacketHandler(null);
-                        session.sendPacketImmediately(new LoginPacket());
+                        BedrockLoginHelper loginHelper = new BedrockLoginHelper(session);
+                        if (onlineMode) {
+                            loginHelper.handleOnlineLogin();
+                        } else {
+                            loginHelper.handleOfflineLogin();
+                        }
                     }
                 })
                 .option(RakChannelOption.RAK_PROTOCOL_VERSION, 11)

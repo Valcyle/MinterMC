@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import net.mcsmash.mintermc.core.BotSessionFactory;
 import net.mcsmash.mintermc.adapter.java.JavaEditionBotSession;
-import net.mcsmash.mintermc.core.BotOptions;
+import net.mcsmash.mintermc.api.bot.BotOptions;
 import net.mcsmash.mintermc.protocol.EditionType;
 
 import java.io.IOException;
@@ -60,7 +60,7 @@ public class MinterServer {
                         options);
 
                 return session;
-            } else if(request.getTargetEdition() == EditionType.BEDROCK_EDITION){
+            } else if (request.getTargetEdition() == EditionType.BEDROCK_EDITION) {
                 BedrockEditionBotSession session = new BedrockEditionBotSession(sessionToken);
 
                 BotOptions options = new BotOptions.Builder()

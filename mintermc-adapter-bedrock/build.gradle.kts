@@ -7,4 +7,5 @@ dependencies {
     
     // Cloudburst Protocol (BE)
     implementation("org.cloudburstmc.protocol:bedrock-connection:3.0.0.Beta12-SNAPSHOT")
+    implementation("com.nimbusds:nimbus-jose-jwt:10.8")
 }
