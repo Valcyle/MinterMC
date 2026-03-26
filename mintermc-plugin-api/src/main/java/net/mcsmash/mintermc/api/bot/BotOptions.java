@@ -1,4 +1,4 @@
-package net.mcsmash.mintermc.core;
+package net.mcsmash.mintermc.api.bot;
 
 public record BotOptions(
         Integer viewDistance,
