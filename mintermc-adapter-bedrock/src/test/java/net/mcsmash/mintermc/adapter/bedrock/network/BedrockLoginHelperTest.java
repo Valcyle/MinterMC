@@ -62,8 +62,8 @@ class BedrockLoginHelperTest {
         Map<String, Object> clientData = JsonUtil.parseJson(clientDataToken.getUnverifiedPayload());
         assertEquals("TestBot", clientData.get("ThirdPartyName"));
         assertEquals("1.26.10", clientData.get("GameVersion"));
-        assertEquals(64, ((Number) clientData.get("SkinImageWidth")).intValue());
-        assertEquals(64, ((Number) clientData.get("SkinImageHeight")).intValue());
+        assertTrue(((Number) clientData.get("SkinImageWidth")).intValue() > 0);
+        assertTrue(((Number) clientData.get("SkinImageHeight")).intValue() > 0);
 
         // The packet must be serializable by the codec the session uses.
         ByteBuf buffer = Unpooled.buffer();

@@ -8,10 +8,12 @@ import org.cloudburstmc.protocol.bedrock.BedrockClientSession;
 import org.cloudburstmc.protocol.bedrock.packet.BedrockPacket;
 import org.cloudburstmc.protocol.bedrock.packet.BedrockPacketHandler;
 import org.cloudburstmc.protocol.bedrock.packet.ClientCacheStatusPacket;
+import org.cloudburstmc.protocol.bedrock.packet.ClientToServerHandshakePacket;
 import org.cloudburstmc.protocol.bedrock.packet.DisconnectPacket;
 import org.cloudburstmc.protocol.bedrock.packet.NetworkSettingsPacket;
 import org.cloudburstmc.protocol.bedrock.packet.NetworkStackLatencyPacket;
 import org.cloudburstmc.protocol.bedrock.packet.PlayStatusPacket;
+import org.cloudburstmc.protocol.bedrock.packet.PacketViolationWarningPacket;
 import org.cloudburstmc.protocol.bedrock.packet.RequestChunkRadiusPacket;
 import org.cloudburstmc.protocol.bedrock.packet.ResourcePackClientResponsePacket;
 import org.cloudburstmc.protocol.bedrock.packet.ResourcePackStackPacket;
@@ -21,7 +23,15 @@ import org.cloudburstmc.protocol.bedrock.packet.SetHealthPacket;
 import org.cloudburstmc.protocol.bedrock.packet.SetLocalPlayerAsInitializedPacket;
 import org.cloudburstmc.protocol.bedrock.packet.StartGamePacket;
 import org.cloudburstmc.protocol.bedrock.packet.TextPacket;
+import org.cloudburstmc.protocol.bedrock.netty.codec.compression.CompressionCodec;
+import org.cloudburstmc.protocol.bedrock.netty.codec.compression.NoopCompression;
+import org.cloudburstmc.protocol.bedrock.netty.codec.compression.SimpleCompressionStrategy;
+import org.cloudburstmc.protocol.bedrock.netty.codec.compression.SnappyCompression;
+import org.cloudburstmc.protocol.bedrock.netty.codec.compression.ZlibCompression;
 import org.cloudburstmc.protocol.common.PacketSignal;
+import org.cloudburstmc.protocol.common.util.Zlib;
+import io.netty.channel.ChannelPipeline;
+import org.cloudburstmc.protocol.bedrock.data.PacketCompressionAlgorithm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,30 +53,57 @@ public class BedrockBotPacketHandler implements BedrockPacketHandler {
     private final BedrockEditionBotSession bot;
     private final BedrockClientSession session;
     private final BedrockLoginHelper loginHelper;
+    private final boolean netherNet;
 
     /**
      * @param bot         the bot session that owns this connection
      * @param session     the low-level Bedrock session
      * @param loginHelper the helper used to build login and handshake packets
+     * @param netherNet   whether the connection uses NetherNet instead of RakNet
      */
     public BedrockBotPacketHandler(BedrockEditionBotSession bot, BedrockClientSession session,
-            BedrockLoginHelper loginHelper) {
+            BedrockLoginHelper loginHelper, boolean netherNet) {
         this.bot = bot;
         this.session = session;
         this.loginHelper = loginHelper;
+        this.netherNet = netherNet;
     }
 
     @Override
     public PacketSignal handle(NetworkSettingsPacket packet) {
-        logger.debug("Received Bedrock network settings (compression={})", packet.getCompressionAlgorithm());
-        // From this point on every packet uses the negotiated compression.
-        session.setCompression(packet.getCompressionAlgorithm());
+        logger.debug("Received Bedrock network settings (compression={}, threshold={})",
+                packet.getCompressionAlgorithm(), packet.getCompressionThreshold());
+        // Bedrock clients send compressed batches without the algorithm header byte;
+        // the negotiated algorithm is implicit for the rest of the connection.
+        // Cloudburst's peer helper always prefixes client connections, so the
+        // compression handler is replaced directly instead.
+        ChannelPipeline pipeline = session.getPeer().getChannel().pipeline();
+        pipeline.replace(CompressionCodec.NAME, CompressionCodec.NAME,
+                new CompressionCodec(compressionStrategy(packet.getCompressionAlgorithm()), false));
         loginHelper.handleOfflineLogin();
         return PacketSignal.HANDLED;
     }
 
+    private static org.cloudburstmc.protocol.bedrock.netty.codec.compression.CompressionStrategy compressionStrategy(
+            PacketCompressionAlgorithm algorithm) {
+        if (algorithm == PacketCompressionAlgorithm.SNAPPY) {
+            return new SimpleCompressionStrategy(new SnappyCompression());
+        }
+        if (algorithm == PacketCompressionAlgorithm.NONE) {
+            return new SimpleCompressionStrategy(new NoopCompression());
+        }
+        return new SimpleCompressionStrategy(new ZlibCompression(Zlib.RAW));
+    }
+
     @Override
     public PacketSignal handle(ServerToClientHandshakePacket packet) {
+        if (netherNet) {
+            // NetherNet already encrypts the transport with DTLS. The retail
+            // client answers the handshake without installing another cipher.
+            logger.debug("Ignoring Bedrock encryption handshake on NetherNet");
+            session.sendPacketImmediately(new ClientToServerHandshakePacket());
+            return PacketSignal.HANDLED;
+        }
         try {
             loginHelper.handleServerToClientHandshake(packet.getJwt());
         } catch (Exception e) {
@@ -191,7 +228,15 @@ public class BedrockBotPacketHandler implements BedrockPacketHandler {
     }
 
     @Override
+    public PacketSignal handle(PacketViolationWarningPacket packet) {
+        logger.warn("Bedrock packet violation from server: type={} severity={} cause={} context={}",
+                packet.getType(), packet.getSeverity(), packet.getPacketCauseId(), packet.getContext());
+        return PacketSignal.HANDLED;
+    }
+
+    @Override
     public PacketSignal handlePacket(BedrockPacket packet) {
+        logger.debug("Bedrock inbound packet: {}", packet.getClass().getSimpleName());
         return BedrockPacketHandler.super.handlePacket(packet);
     }
 
@@ -206,3 +251,6 @@ public class BedrockBotPacketHandler implements BedrockPacketHandler {
         session.sendPacketImmediately(response);
     }
 }
+
+
+

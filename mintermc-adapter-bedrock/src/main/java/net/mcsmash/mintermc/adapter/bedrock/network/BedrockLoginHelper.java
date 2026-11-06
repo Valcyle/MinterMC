@@ -51,6 +51,9 @@ public class BedrockLoginHelper {
 
     private static final String MULTIPLAYER_AUDIENCE = "api://auth-minecraft-services/multiplayer";
 
+    /** Bundled classic/persona skin data, matching the shape the retail client sends. */
+    private static final Map<String, Object> DEFAULT_SKIN = loadDefaultSkin();
+
     private final BedrockClientSession session;
     private final KeyPair keyPair;
     private final String username;
@@ -69,8 +72,26 @@ public class BedrockLoginHelper {
      */
     public BedrockLoginHelper(BedrockClientSession session, String username, String gameVersion,
             String serverAddress, UUID identity) {
+        this(session, username, gameVersion, serverAddress, identity, null);
+    }
+
+    /**
+     * Creates a login helper that reuses an existing key pair.
+     * <br>
+     * NetherNet requires the transport identity assertion to use the same key as
+     * the Bedrock login, otherwise BDS refuses the join.
+     *
+     * @param session       the Bedrock client session used to send login packets
+     * @param username      the player name shown to the server
+     * @param gameVersion   the client game version sent in the client data
+     * @param serverAddress the target address in {@code host:port} form
+     * @param identity      the offline UUID of the bot, or {@code null} to derive one
+     * @param keyPair       the key pair to use, or {@code null} to generate one
+     */
+    public BedrockLoginHelper(BedrockClientSession session, String username, String gameVersion,
+            String serverAddress, UUID identity, KeyPair keyPair) {
         this.session = session;
-        this.keyPair = EncryptionUtils.createKeyPair();
+        this.keyPair = keyPair != null ? keyPair : EncryptionUtils.createKeyPair();
         this.username = username;
         this.gameVersion = gameVersion;
         this.serverAddress = serverAddress;
@@ -185,43 +206,42 @@ public class BedrockLoginHelper {
      * @throws Exception if the token cannot be signed
      */
     private String createClientDataToken(String publicKey) throws Exception {
-        Map<String, Object> data = new LinkedHashMap<>();
+        Map<String, Object> data = new LinkedHashMap<>(DEFAULT_SKIN);
         data.put("GameVersion", gameVersion);
         data.put("ServerAddress", serverAddress);
         data.put("ThirdPartyName", username);
-        data.put("ThirdPartyNameOnly", false);
         data.put("LanguageCode", "en_US");
 
-        // Minimal valid 64x64 skin: solid opaque pixels are enough for the server
-        // to accept the login; plugins can replace this with real skin handling later.
-        data.put("SkinId", UUID.randomUUID().toString());
-        data.put("SkinData", Base64.getEncoder().encodeToString(createSolidSkin()));
-        data.put("SkinImageWidth", SKIN_WIDTH);
-        data.put("SkinImageHeight", SKIN_HEIGHT);
-        data.put("SkinResourcePatch", encodeUtf8(SKIN_RESOURCE_PATCH));
-        data.put("SkinGeometryData", encodeUtf8(SKIN_GEOMETRY));
-        data.put("SkinGeometryDataEngineVersion", encodeUtf8(gameVersion));
-        data.put("SkinAnimationData", "");
-        data.put("AnimatedImageData", List.of());
-        data.put("PersonaPieces", List.of());
-        data.put("PieceTintColors", List.of());
-        data.put("PersonaSkin", false);
-        data.put("PremiumSkin", false);
-        data.put("CapeId", "");
-        data.put("CapeData", "");
-        data.put("CapeImageWidth", 0);
-        data.put("CapeImageHeight", 0);
-        data.put("CapeOnClassicSkin", false);
-        data.put("ArmSize", "wide");
-        data.put("SkinColor", "#FFFFFF");
-        data.put("ProfileHash", "");
-
+        if (DEFAULT_SKIN.isEmpty()) {
+            // Fallback when the bundled skin resource is unavailable.
+            data.put("SkinId", UUID.randomUUID().toString());
+            data.put("SkinData", Base64.getEncoder().encodeToString(createSolidSkin()));
+            data.put("SkinImageWidth", SKIN_WIDTH);
+            data.put("SkinImageHeight", SKIN_HEIGHT);
+            data.put("SkinResourcePatch", encodeUtf8(SKIN_RESOURCE_PATCH));
+            data.put("SkinGeometryData", encodeUtf8(SKIN_GEOMETRY));
+            data.put("SkinGeometryDataEngineVersion", encodeUtf8("1.14.0"));
+            data.put("SkinAnimationData", "");
+            data.put("AnimatedImageData", List.of());
+            data.put("PersonaPieces", List.of());
+            data.put("PieceTintColors", List.of());
+            data.put("PersonaSkin", false);
+            data.put("PremiumSkin", false);
+            data.put("CapeId", "");
+            data.put("CapeData", "");
+            data.put("CapeImageWidth", 0);
+            data.put("CapeImageHeight", 0);
+            data.put("CapeOnClassicSkin", false);
+            data.put("ArmSize", "wide");
+            data.put("SkinColor", "#FFFFFF");
+        }
         data.put("PlayFabId", randomPlayFabId());
         data.put("DeviceId", UUID.randomUUID().toString());
         data.put("DeviceModel", "MinterMC");
         data.put("DeviceOS", 7); // Windows
         data.put("UIProfile", 0);
         data.put("GuiScale", -1);
+        data.put("GraphicsMode", 1);
         data.put("CurrentInputMode", 1);
         data.put("DefaultInputMode", 1);
         data.put("PlatformOfflineId", "");
@@ -245,6 +265,19 @@ public class BedrockLoginHelper {
         signature.setKey(keyPair.getPrivate());
         signature.setPayload(JsonUtil.toJson(data));
         return signature.getCompactSerialization();
+    }
+
+    private static Map<String, Object> loadDefaultSkin() {
+        try (var in = BedrockLoginHelper.class.getResourceAsStream("/bedrock/default_skin.json")) {
+            if (in == null) {
+                logger.warn("No bundled Bedrock skin found, using the generated fallback skin");
+                return Map.of();
+            }
+            return JsonUtil.parseJson(new String(in.readAllBytes(), StandardCharsets.UTF_8));
+        } catch (Exception e) {
+            logger.warn("Failed to load the bundled Bedrock skin, using the generated fallback skin", e);
+            return Map.of();
+        }
     }
 
     private static byte[] createSolidSkin() {
