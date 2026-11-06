@@ -64,7 +64,7 @@ public class MinterServer {
                 BedrockEditionBotSession session = new BedrockEditionBotSession(sessionToken);
 
                 BotOptions options = new BotOptions.Builder()
-                        .version("1.26.3")
+                        .version("1.26.60") // Must match Bedrock_v2225.CODEC
                         .build();
 
                 session.connect(
@@ -125,3 +125,4 @@ public class MinterServer {
         minterServer.start();
     }
 }
+
