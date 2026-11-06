@@ -135,7 +135,9 @@ class NetherNetLoginReplayTest {
                     batch.setUncompressed(Unpooled.wrappedBuffer(raw));
                     System.out.println("Replay: active=" + session.getPeer().getChannel().isActive()
                             + " writable=" + session.getPeer().getChannel().isWritable());
-                    session.getPeer().getChannel().writeAndFlush(batch);
+                    session.getPeer().getChannel().writeAndFlush(batch)
+                            .addListener(f -> System.out.println(
+                                    "Replay: raw batch write success=" + f.isSuccess() + " cause=" + f.cause()));
                     System.out.println("Replay: sent raw captured batch");
                     return PacketSignal.HANDLED;
                 } catch (Exception e) {
