@@ -1,5 +1,6 @@
 package net.mcsmash.mintermc.adapter.bedrock.network;
 
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelPipeline;
@@ -11,6 +12,7 @@ import org.cloudburstmc.protocol.bedrock.codec.BedrockCodec;
 import org.cloudburstmc.protocol.bedrock.codec.v2225.Bedrock_v2225;
 import org.cloudburstmc.protocol.bedrock.data.auth.AuthType;
 import org.cloudburstmc.protocol.bedrock.data.auth.TokenPayload;
+import org.cloudburstmc.protocol.bedrock.netty.BedrockBatchWrapper;
 import org.cloudburstmc.protocol.bedrock.netty.codec.compression.CompressionCodec;
 import org.cloudburstmc.protocol.bedrock.netty.codec.compression.SimpleCompressionStrategy;
 import org.cloudburstmc.protocol.bedrock.netty.codec.compression.ZlibCompression;
@@ -60,6 +62,7 @@ class NetherNetLoginReplayTest {
     void replaysCapturedLogin() throws Exception {
         String file = System.getenv("MINTER_REPLAY_LOGIN");
         assumeTrue(file != null && !file.isBlank(), "MINTER_REPLAY_LOGIN is not set");
+        String rawFile = System.getenv("MINTER_REPLAY_RAW");
 
         Map<String, Object> data = JsonUtil.parseJson(Files.readString(Path.of(file)));
         String privateKeyDer = (String) data.get("privateKeyDer");
@@ -84,7 +87,7 @@ class NetherNetLoginReplayTest {
                     session -> {
                         session.setCodec(CODEC);
                         session.setPacketHandler(
-                                new ReplayHandler(identityToken, clientJwt, response, session));
+                                new ReplayHandler(identityToken, clientJwt, response, session, rawFile));
                     });
             assertTrue(future.isSuccess(), "NetherNet connection failed");
             Channel channel = future.channel();
@@ -108,13 +111,15 @@ class NetherNetLoginReplayTest {
         private final String clientJwt;
         private final CountDownLatch response;
         private final BedrockClientSession session;
+        private final String rawFile;
 
         private ReplayHandler(String identityToken, String clientJwt, CountDownLatch response,
-                BedrockClientSession session) {
+                BedrockClientSession session, String rawFile) {
             this.identityToken = identityToken;
             this.clientJwt = clientJwt;
             this.response = response;
             this.session = session;
+            this.rawFile = rawFile;
         }
 
         @Override
@@ -122,6 +127,21 @@ class NetherNetLoginReplayTest {
             ChannelPipeline pipeline = session.getPeer().getChannel().pipeline();
             pipeline.replace(CompressionCodec.NAME, CompressionCodec.NAME,
                     new CompressionCodec(new SimpleCompressionStrategy(new ZlibCompression(Zlib.RAW)), false));
+
+            if (rawFile != null) {
+                try {
+                    byte[] raw = Files.readAllBytes(Path.of(rawFile));
+                    BedrockBatchWrapper batch = BedrockBatchWrapper.newInstance();
+                    batch.setUncompressed(Unpooled.wrappedBuffer(raw));
+                    System.out.println("Replay: active=" + session.getPeer().getChannel().isActive()
+                            + " writable=" + session.getPeer().getChannel().isWritable());
+                    session.getPeer().getChannel().writeAndFlush(batch);
+                    System.out.println("Replay: sent raw captured batch");
+                    return PacketSignal.HANDLED;
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
 
             LoginPacket login = new LoginPacket();
             login.setProtocolVersion(CODEC.getProtocolVersion());
