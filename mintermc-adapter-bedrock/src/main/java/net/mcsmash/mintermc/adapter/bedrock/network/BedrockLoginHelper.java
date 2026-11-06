@@ -51,8 +51,14 @@ public class BedrockLoginHelper {
 
     private static final String MULTIPLAYER_AUDIENCE = "api://auth-minecraft-services/multiplayer";
 
-    /** Bundled classic/persona skin data, matching the shape the retail client sends. */
-    private static final Map<String, Object> DEFAULT_SKIN = loadDefaultSkin();
+    /**
+     * MinterMC's own generated classic skin.
+     * <br>
+     * This is deliberately generated instead of bundling Mojang's Steve/persona
+     * skin. The retail skin textures and geometry are Mojang assets and are not
+     * covered by the MIT-licensed data packages they are often copied from.
+     */
+    private static final Map<String, Object> DEFAULT_SKIN = createDefaultSkin();
 
     private final BedrockClientSession session;
     private final KeyPair keyPair;
@@ -212,29 +218,6 @@ public class BedrockLoginHelper {
         data.put("ThirdPartyName", username);
         data.put("LanguageCode", "en_US");
 
-        if (DEFAULT_SKIN.isEmpty()) {
-            // Fallback when the bundled skin resource is unavailable.
-            data.put("SkinId", UUID.randomUUID().toString());
-            data.put("SkinData", Base64.getEncoder().encodeToString(createSolidSkin()));
-            data.put("SkinImageWidth", SKIN_WIDTH);
-            data.put("SkinImageHeight", SKIN_HEIGHT);
-            data.put("SkinResourcePatch", encodeUtf8(SKIN_RESOURCE_PATCH));
-            data.put("SkinGeometryData", encodeUtf8(SKIN_GEOMETRY));
-            data.put("SkinGeometryDataEngineVersion", encodeUtf8("1.14.0"));
-            data.put("SkinAnimationData", "");
-            data.put("AnimatedImageData", List.of());
-            data.put("PersonaPieces", List.of());
-            data.put("PieceTintColors", List.of());
-            data.put("PersonaSkin", false);
-            data.put("PremiumSkin", false);
-            data.put("CapeId", "");
-            data.put("CapeData", "");
-            data.put("CapeImageWidth", 0);
-            data.put("CapeImageHeight", 0);
-            data.put("CapeOnClassicSkin", false);
-            data.put("ArmSize", "wide");
-            data.put("SkinColor", "#FFFFFF");
-        }
         data.put("PlayFabId", randomPlayFabId());
         data.put("DeviceId", UUID.randomUUID().toString());
         data.put("DeviceModel", "MinterMC");
@@ -267,17 +250,29 @@ public class BedrockLoginHelper {
         return signature.getCompactSerialization();
     }
 
-    private static Map<String, Object> loadDefaultSkin() {
-        try (var in = BedrockLoginHelper.class.getResourceAsStream("/bedrock/default_skin.json")) {
-            if (in == null) {
-                logger.warn("No bundled Bedrock skin found, using the generated fallback skin");
-                return Map.of();
-            }
-            return JsonUtil.parseJson(new String(in.readAllBytes(), StandardCharsets.UTF_8));
-        } catch (Exception e) {
-            logger.warn("Failed to load the bundled Bedrock skin, using the generated fallback skin", e);
-            return Map.of();
-        }
+    private static Map<String, Object> createDefaultSkin() {
+        Map<String, Object> skin = new LinkedHashMap<>();
+        skin.put("SkinId", UUID.randomUUID().toString());
+        skin.put("SkinData", Base64.getEncoder().encodeToString(createSolidSkin()));
+        skin.put("SkinImageWidth", SKIN_WIDTH);
+        skin.put("SkinImageHeight", SKIN_HEIGHT);
+        skin.put("SkinResourcePatch", encodeUtf8(SKIN_RESOURCE_PATCH));
+        skin.put("SkinGeometryData", encodeUtf8(SKIN_GEOMETRY));
+        skin.put("SkinGeometryDataEngineVersion", encodeUtf8("1.14.0"));
+        skin.put("SkinAnimationData", "");
+        skin.put("AnimatedImageData", List.of());
+        skin.put("PersonaPieces", List.of());
+        skin.put("PieceTintColors", List.of());
+        skin.put("PersonaSkin", false);
+        skin.put("PremiumSkin", false);
+        skin.put("CapeId", "");
+        skin.put("CapeData", "");
+        skin.put("CapeImageWidth", 0);
+        skin.put("CapeImageHeight", 0);
+        skin.put("CapeOnClassicSkin", false);
+        skin.put("ArmSize", "wide");
+        skin.put("SkinColor", "#FFFFFF");
+        return Map.copyOf(skin);
     }
 
     private static byte[] createSolidSkin() {
