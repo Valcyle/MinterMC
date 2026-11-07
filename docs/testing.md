@@ -100,8 +100,8 @@ Java の場合は `Login SUCCESS!` と座標が返ります。
 | サーバー | transport | 結果 |
 |---|---|---|
 | Nukkit-MOT 1.26.60（RakNet、`127.0.0.1:19228`） | `raknet` | **参加・spawn 成功** |
-| 公式 BDS 1.26.61.1（NetherNet） | `nethernet` | 接続は成立、Login 後に `readNoHeader failed! packetId: 1` で切断 |
-| 公式 BDS 1.26.61.1（RakNet 互換） | `raknet` | `PacketViolationWarningPacket` で切断 |
+| 公式 BDS 1.26.61.1（NetherNet、`127.0.0.1:19132`） | `nethernet` | **参加・spawn 成功** |
+| 公式 BDS 1.26.61.1（RakNet 互換） | `raknet` | `PacketViolationWarningPacket` で切断（NetherNet を使ってください） |
 | Java Edition サーバー | - | 未検証（`join_je.py` で確認可能） |
 
 ### Nukkit-MOT で試す場合
@@ -129,14 +129,29 @@ $env:MINTER_BOT_NAME    = "MinterProbe"
 ```properties
 online-mode=false
 allow-list=false
-server-port=20050
+server-port=19132
 transport=nethernet
 ```
 
 起動後、MinterMC 側は既定の `nethernet` で接続します。
 
-> [!WARNING]
-> 現在の公式 BDS は Login パケットのバッチフレーミング（`readNoHeader`）で拒否します。Nukkit では通るため、BDS 側の NetherNet/バッチ処理との互換性が残課題です。
+```powershell
+$env:MINTER_TARGET_HOST = "127.0.0.1"
+$env:MINTER_TARGET_PORT = "19132"
+$env:MINTER_BOT_NAME    = "MinterProbe"
+.\.venv\Scripts\python.exe examples\python\join_be.py
+```
+
+成功すると MinterMC 側に次のログが出ます。
+
+```
+Bedrock login accepted for MinterProbe
+Bedrock bot MinterProbe joined the world at ...
+Bedrock bot MinterProbe spawned
+```
+
+> [!NOTE]
+> BDS は `DeviceOS=7`（Windows）のログインを `readNoHeader` で拒否します。MinterMC は retail クライアントと同じ `DeviceOS=12`（Switch/NX）を送ります。NetherNet の identity token と Login の `Token` は同じマルチプレイヤートークンを共有しています。
 
 ---
 

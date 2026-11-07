@@ -69,8 +69,9 @@ class NetherNetLoginReplayTest {
         String publicKeyDer = (String) data.get("publicKeyDer");
         String identityToken = (String) data.get("identityToken");
         String clientJwt = (String) data.get("clientJwt");
-        String host = (String) data.get("host");
-        int port = ((Number) data.get("port")).intValue();
+        String host = System.getenv().getOrDefault("MINTER_REPLAY_HOST", (String) data.get("host"));
+        int port = Integer.parseInt(System.getenv().getOrDefault("MINTER_REPLAY_PORT",
+                String.valueOf(((Number) data.get("port")).intValue())));
 
         KeyFactory keyFactory = KeyFactory.getInstance("EC");
         PrivateKey privateKey = keyFactory.generatePrivate(
@@ -83,7 +84,7 @@ class NetherNetLoginReplayTest {
         NioEventLoopGroup group = new NioEventLoopGroup();
         CountDownLatch response = new CountDownLatch(1);
         try {
-            ChannelFuture future = BedrockNetherNetConnector.connect(group, host, port, identity, true,
+            ChannelFuture future = BedrockNetherNetConnector.connect(group, host, port, identity, false,
                     session -> {
                         session.setCodec(CODEC);
                         session.setPacketHandler(
@@ -126,7 +127,8 @@ class NetherNetLoginReplayTest {
         public PacketSignal handle(NetworkSettingsPacket packet) {
             ChannelPipeline pipeline = session.getPeer().getChannel().pipeline();
             pipeline.replace(CompressionCodec.NAME, CompressionCodec.NAME,
-                    new CompressionCodec(new SimpleCompressionStrategy(new ZlibCompression(Zlib.RAW)), false));
+                    new TolerantCompressionCodec(
+                            new SimpleCompressionStrategy(new ZlibCompression(Zlib.RAW)), true));
 
             if (rawFile != null) {
                 try {

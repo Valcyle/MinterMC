@@ -4,7 +4,10 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import org.cloudburstmc.protocol.bedrock.netty.BedrockBatchWrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.HexFormat;
 import java.util.List;
 
 /**
@@ -18,12 +21,19 @@ public class NetherNetBatchCodec extends MessageToMessageCodec<ByteBuf, BedrockB
 
     public static final String NAME = "nethernet-batch-codec";
 
+    private static final Logger logger = LoggerFactory.getLogger(NetherNetBatchCodec.class);
+
     @Override
     protected void encode(ChannelHandlerContext ctx, BedrockBatchWrapper msg, List<Object> out) {
         if (msg.getCompressed() == null) {
             throw new IllegalStateException("Bedrock batch was not compressed");
         }
-        out.add(msg.getCompressed().retainedSlice());
+        ByteBuf compressed = msg.getCompressed();
+        byte[] head = new byte[Math.min(20, compressed.readableBytes())];
+        compressed.getBytes(compressed.readerIndex(), head);
+        logger.debug("NetherNet outbound batch {} bytes head {}",
+                compressed.readableBytes(), HexFormat.of().formatHex(head));
+        out.add(compressed.retainedSlice());
     }
 
     @Override

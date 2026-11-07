@@ -129,7 +129,7 @@ public class BedrockEditionBotSession extends BotSession {
                 .handler(new BedrockClientInitializer() {
                     @Override
                     protected void initSession(BedrockClientSession bedrockSession) {
-                        initializeSession(bedrockSession, username, options, host, port, false, null);
+                        initializeSession(bedrockSession, username, options, host, port, false, null, null);
                     }
                 })
                 .option(RakChannelOption.RAK_PROTOCOL_VERSION, 11)
@@ -160,17 +160,17 @@ public class BedrockEditionBotSession extends BotSession {
         this.eventLoopGroup = group;
 
         KeyPair keyPair = EncryptionUtils.createKeyPair();
-        OperatorIdentity identity;
-        try {
-            identity = new OperatorIdentity(keyPair.getPrivate(), keyPair.getPublic(), null, "MinterMC")
-                    .forPlayer("0", username);
-        } catch (Exception e) {
-            group.shutdownGracefully();
-            throw new IllegalStateException("Failed to create NetherNet identity", e);
-        }
+        BedrockLoginHelper loginHelper = new BedrockLoginHelper(
+                null, username, options.version(), host + ":" + port,
+                resolveOfflineIdentity(username), keyPair);
+        OperatorIdentity identity = OperatorIdentity.fromToken(
+                keyPair, loginHelper.identityToken(), "MinterMC");
 
         ChannelFuture future = BedrockNetherNetConnector.connect(group, host, port, identity, lanDiscovery,
-                bedrockSession -> initializeSession(bedrockSession, username, options, host, port, true, keyPair));
+                bedrockSession -> {
+                    loginHelper.setSession(bedrockSession);
+                    initializeSession(bedrockSession, username, options, host, port, true, keyPair, loginHelper);
+                });
 
         if (!future.isSuccess()) {
             Throwable cause = future.cause();
@@ -191,16 +191,20 @@ public class BedrockEditionBotSession extends BotSession {
     }
 
     private void initializeSession(BedrockClientSession bedrockSession, String username, BotOptions options,
-            String host, int port, boolean netherNet, KeyPair keyPair) {
+            String host, int port, boolean netherNet, KeyPair keyPair, BedrockLoginHelper loginHelper) {
         this.session = bedrockSession;
         bedrockSession.setCodec(CODEC);
-        BedrockLoginHelper loginHelper = new BedrockLoginHelper(
-                bedrockSession,
-                username,
-                options.version(),
-                host + ":" + port,
-                resolveOfflineIdentity(username),
-                keyPair);
+        if (loginHelper == null) {
+            loginHelper = new BedrockLoginHelper(
+                    bedrockSession,
+                    username,
+                    options.version(),
+                    host + ":" + port,
+                    resolveOfflineIdentity(username),
+                    keyPair);
+        } else {
+            loginHelper.setSession(bedrockSession);
+        }
         bedrockSession.setPacketHandler(new BedrockBotPacketHandler(
                 this, bedrockSession, loginHelper, netherNet));
     }

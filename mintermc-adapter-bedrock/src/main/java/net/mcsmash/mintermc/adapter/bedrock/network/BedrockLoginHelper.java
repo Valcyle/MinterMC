@@ -42,13 +42,6 @@ public class BedrockLoginHelper {
     private static final String SKIN_RESOURCE_PATCH =
             "{\"geometry\":{\"default\":\"geometry.humanoid.custom\"}}";
 
-    private static final String SKIN_GEOMETRY =
-            "{\"format_version\":\"1.12.0\",\"minecraft:geometry\":[{\"description\":"
-                    + "{\"identifier\":\"geometry.humanoid.custom\",\"texture_width\":64,"
-                    + "\"texture_height\":64,\"visible_bounds_width\":2,"
-                    + "\"visible_bounds_height\":3.5,\"visible_bounds_offset\":[0,1.5,0]},"
-                    + "\"bones\":[]}]}";
-
     private static final String MULTIPLAYER_AUDIENCE = "api://auth-minecraft-services/multiplayer";
 
     /**
@@ -60,12 +53,15 @@ public class BedrockLoginHelper {
      */
     private static final Map<String, Object> DEFAULT_SKIN = createDefaultSkin();
 
-    private final BedrockClientSession session;
+    private BedrockClientSession session;
     private final KeyPair keyPair;
     private final String username;
     private final String gameVersion;
     private final String serverAddress;
     private final UUID identity;
+
+    /** The multiplayer token shared by the NetherNet identity and the login payload. */
+    private String identityToken;
 
     /**
      * Creates a login helper for the given session.
@@ -134,9 +130,43 @@ public class BedrockLoginHelper {
         String publicKey = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
         LoginPacket loginPacket = new LoginPacket();
         loginPacket.setProtocolVersion(Bedrock_v2225.CODEC.getProtocolVersion());
-        loginPacket.setAuthPayload(new TokenPayload(createIdentityToken(publicKey), AuthType.SELF_SIGNED));
+        loginPacket.setAuthPayload(new TokenPayload(identityToken(), AuthType.SELF_SIGNED));
         loginPacket.setClientJwt(createClientDataToken(publicKey));
         return loginPacket;
+    }
+
+    /**
+     * Returns the multiplayer token used both for the login payload and for the NetherNet
+     * identity assertion.
+     * <br>
+     * The retail client presents the same multiplayer token in both places. Sharing it keeps the
+     * transport identity and the login consistent, and lets the token be generated before the
+     * WebRTC session exists.
+     *
+     * @return the cached compact ES384 multiplayer token
+     */
+    public String identityToken() {
+        if (identityToken == null) {
+            try {
+                identityToken = createIdentityToken(
+                        Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded()));
+            } catch (Exception e) {
+                throw new IllegalStateException("Failed to create the Bedrock identity token", e);
+            }
+        }
+        return identityToken;
+    }
+
+    /**
+     * Attaches the session after the transport has created it.
+     * <br>
+     * The token must be generated before connecting so the NetherNet identity can carry it, but
+     * the session only exists once the connection has been established.
+     *
+     * @param session the Bedrock session for this bot
+     */
+    public void setSession(BedrockClientSession session) {
+        this.session = session;
     }
 
     /**
@@ -221,7 +251,7 @@ public class BedrockLoginHelper {
         data.put("PlayFabId", randomPlayFabId());
         data.put("DeviceId", UUID.randomUUID().toString());
         data.put("DeviceModel", "MinterMC");
-        data.put("DeviceOS", 7); // Windows
+        data.put("DeviceOS", 12); // BDS rejects Windows (7) during login; use the retail Switch value
         data.put("UIProfile", 0);
         data.put("GuiScale", -1);
         data.put("GraphicsMode", 1);
@@ -257,7 +287,7 @@ public class BedrockLoginHelper {
         skin.put("SkinImageWidth", SKIN_WIDTH);
         skin.put("SkinImageHeight", SKIN_HEIGHT);
         skin.put("SkinResourcePatch", encodeUtf8(SKIN_RESOURCE_PATCH));
-        skin.put("SkinGeometryData", encodeUtf8(SKIN_GEOMETRY));
+        skin.put("SkinGeometryData", "");
         skin.put("SkinGeometryDataEngineVersion", encodeUtf8("1.14.0"));
         skin.put("SkinAnimationData", "");
         skin.put("AnimatedImageData", List.of());
