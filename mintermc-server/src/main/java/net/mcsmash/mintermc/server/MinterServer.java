@@ -26,6 +26,14 @@ public class MinterServer {
 
     private static final Logger logger = LoggerFactory.getLogger(MinterServer.class);
 
+    /** Overridable so a local server can be tested without rebuilding. */
+    private static final String JAVA_VERSION =
+            envOrDefault("MINTER_JAVA_VERSION", "1.21.4");
+    private static final String BEDROCK_VERSION =
+            envOrDefault("MINTER_BEDROCK_VERSION", "1.26.60");
+    private static final String BEDROCK_TRANSPORT =
+            envOrDefault("MINTER_BEDROCK_TRANSPORT", "nethernet");
+
     private final int port;
     private final Server server;
     private final BotManager botManager;
@@ -49,7 +57,7 @@ public class MinterServer {
                 // but MinterBotServiceImpl calls this inside its own context)
                 // For now we use default options or map from request if available
                 BotOptions options = new BotOptions.Builder()
-                        .version("1.21.4") // Default version
+                        .version(JAVA_VERSION)
                         .build();
 
                 session.connect(
@@ -64,8 +72,8 @@ public class MinterServer {
                 BedrockEditionBotSession session = new BedrockEditionBotSession(sessionToken);
 
                 BotOptions options = new BotOptions.Builder()
-                        .version("1.26.60") // Protocol 2225 (Bedrock_v2225)
-                        .transport("nethernet")
+                        .version(BEDROCK_VERSION) // Protocol 2225 (Bedrock_v2225)
+                        .transport(BEDROCK_TRANSPORT)
                         .build();
 
                 session.connect(
@@ -114,6 +122,11 @@ public class MinterServer {
         if (server != null) {
             server.shutdown().awaitTermination(30, java.util.concurrent.TimeUnit.SECONDS);
         }
+    }
+
+    private static String envOrDefault(String key, String fallback) {
+        String value = System.getenv(key);
+        return value == null || value.isBlank() ? fallback : value;
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {
