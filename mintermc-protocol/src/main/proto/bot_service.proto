@@ -16,6 +16,9 @@ service MinterBotService {
     
     // Move the bot to the specified coordinates (Simplified movement API)
     rpc MoveTo (MoveRequest) returns (MoveResponse);
+
+    // Retrieve the block at the specified coordinates
+    rpc GetBlock (BlockRequest) returns (BlockResponse);
     
     // [IMPORTANT] Event subscription and command sending via bidirectional streaming
     // This allows the SDK to hook into asynchronous events such as chat and block breaking
@@ -68,6 +71,19 @@ message MoveRequest {
 
 message MoveResponse {
     bool reached = 1; // Whether the bot reached the destination, failed, or was canceled
+}
+
+message BlockRequest {
+    string session_id = 1;
+    int32 x = 2;
+    int32 y = 3;
+    int32 z = 4;
+}
+
+message BlockResponse {
+    bool found = 1; // False when the block is outside the world or not loaded
+    string material = 2; // Block identifier such as minecraft:stone
+    bool passable = 3; // Whether a player can move through the block
 }
 
 // Commands from SDK to the kernel (on the event stream)

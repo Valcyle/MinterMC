@@ -178,7 +178,25 @@ cross-player chat is required.
 
 ---
 
-## 7. Cleanup
+## 7. Blocks
+
+`GetBlock` returns the block at the given coordinates.
+
+```powershell
+$env:MINTER_BLOCK_X  = "7"
+$env:MINTER_BLOCK_Z  = "23"
+$env:MINTER_BLOCK_YS = "-64,0,32,64,70,100"
+.\.venv\Scripts\python.exe examples\python\blocks_be.py
+```
+
+Bedrock sends block data per 16x16x16 section on request, so the first query
+of a section costs one round trip to the server. A section that the server does
+not have (outside the loaded area) returns `found=false`. Fully empty sections
+are reported as `minecraft:air`.
+
+---
+
+## 8. Cleanup
 
 - Stop `gradlew :mintermc-server:run` with `Ctrl+C`.
 - If you started a test server, stop the process and restore its configuration.

@@ -1,13 +1,17 @@
 package net.mcsmash.mintermc.adapter.bedrock.network;
 
 import net.mcsmash.mintermc.adapter.bedrock.BedrockEditionBotSession;
+import net.mcsmash.mintermc.adapter.bedrock.world.BedrockSubChunk;
 import net.mcsmash.mintermc.api.math.Location;
 import net.mcsmash.mintermc.api.math.Vector3;
 import org.cloudburstmc.math.vector.Vector3f;
+import org.cloudburstmc.math.vector.Vector3i;
 import org.cloudburstmc.nbt.NbtList;
 import org.cloudburstmc.nbt.NbtMap;
 import org.cloudburstmc.protocol.bedrock.BedrockClientSession;
 import org.cloudburstmc.protocol.bedrock.codec.BedrockCodecHelper;
+import org.cloudburstmc.protocol.bedrock.data.SubChunkData;
+import org.cloudburstmc.protocol.bedrock.data.SubChunkRequestResult;
 import org.cloudburstmc.protocol.bedrock.data.definitions.BlockDefinition;
 import org.cloudburstmc.protocol.bedrock.data.definitions.ItemDefinition;
 import org.cloudburstmc.protocol.bedrock.data.definitions.SimpleBlockDefinition;
@@ -31,6 +35,7 @@ import org.cloudburstmc.protocol.bedrock.packet.ServerToClientHandshakePacket;
 import org.cloudburstmc.protocol.bedrock.packet.SetHealthPacket;
 import org.cloudburstmc.protocol.bedrock.packet.SetLocalPlayerAsInitializedPacket;
 import org.cloudburstmc.protocol.bedrock.packet.StartGamePacket;
+import org.cloudburstmc.protocol.bedrock.packet.SubChunkPacket;
 import org.cloudburstmc.protocol.bedrock.packet.TextPacket;
 import org.cloudburstmc.protocol.bedrock.netty.codec.compression.CompressionCodec;
 import org.cloudburstmc.protocol.bedrock.netty.codec.compression.NoopCompression;
@@ -181,6 +186,7 @@ public class BedrockBotPacketHandler implements BedrockPacketHandler {
     public PacketSignal handle(StartGamePacket packet) {
         installDefinitions(packet);
         bot.setRuntimeEntityId(packet.getRuntimeEntityId());
+        bot.setDimension(packet.getDimensionId());
 
         Vector3f position = packet.getPlayerPosition();
         if (position != null) {
@@ -239,6 +245,33 @@ public class BedrockBotPacketHandler implements BedrockPacketHandler {
         if (receivedChunks++ == 0) {
             logger.debug("Bedrock bot {} is receiving world chunks at ({}, {})",
                     bot.getUsername(), packet.getChunkX(), packet.getChunkZ());
+        }
+        return PacketSignal.HANDLED;
+    }
+
+    @Override
+    public PacketSignal handle(SubChunkPacket packet) {
+        for (SubChunkData data : packet.getSubChunks()) {
+            Vector3i center = packet.getCenterPosition();
+            Vector3i offset = data.getPosition();
+            int chunkX = center.getX() + offset.getX();
+            int sectionY = center.getY() + offset.getY();
+            int chunkZ = center.getZ() + offset.getZ();
+            if (data.getResult() == SubChunkRequestResult.SUCCESS && data.getData() != null) {
+                try {
+                    bot.acceptSection(chunkX, sectionY, chunkZ,
+                            BedrockSubChunk.decode(data.getData()));
+                } catch (Exception e) {
+                    logger.warn("Could not decode sub-chunk {} {} {}", chunkX, sectionY, chunkZ, e);
+                    bot.rejectSection(chunkX, sectionY, chunkZ);
+                }
+            } else if (data.getResult() == SubChunkRequestResult.SUCCESS_ALL_AIR) {
+                int[] air = new int[BedrockSubChunk.BLOCK_COUNT];
+                java.util.Arrays.fill(air, BedrockStaticDefinitions.airNetworkId());
+                bot.acceptSection(chunkX, sectionY, chunkZ, air);
+            } else {
+                bot.rejectSection(chunkX, sectionY, chunkZ);
+            }
         }
         return PacketSignal.HANDLED;
     }

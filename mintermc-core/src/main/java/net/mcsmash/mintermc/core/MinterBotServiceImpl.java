@@ -2,6 +2,7 @@ package net.mcsmash.mintermc.core;
 
 import net.mcsmash.mintermc.api.math.Location;
 import net.mcsmash.mintermc.api.math.Vector3;
+import net.mcsmash.mintermc.api.block.Block;
 import net.mcsmash.mintermc.protocol.*;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
@@ -107,6 +108,30 @@ public class MinterBotServiceImpl extends MinterBotServiceGrpc.MinterBotServiceI
                     }
                     responseObserver.onCompleted();
                 });
+    }
+
+    @Override
+    public void getBlock(BlockRequest request, StreamObserver<BlockResponse> responseObserver) {
+        BotSession session = botManager.getSessionByToken(request.getSessionId());
+
+        if (session == null) {
+            responseObserver.onError(io.grpc.Status.NOT_FOUND
+                    .withDescription("Invalid or expired session token")
+                    .asRuntimeException());
+            return;
+        }
+
+        Block block = session.getBlockAt(
+                new Vector3(request.getX(), request.getY(), request.getZ()));
+        BlockResponse response = block == null
+                ? BlockResponse.newBuilder().setFound(false).build()
+                : BlockResponse.newBuilder()
+                        .setFound(true)
+                        .setMaterial(block.getMaterialName())
+                        .setPassable(block.isPassable())
+                        .build();
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
     }
 
     @Override

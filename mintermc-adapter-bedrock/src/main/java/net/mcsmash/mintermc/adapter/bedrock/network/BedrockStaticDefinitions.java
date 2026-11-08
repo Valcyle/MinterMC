@@ -40,8 +40,12 @@ public final class BedrockStaticDefinitions {
     private static final String BLOCKS_RESOURCE = "/bedrock/bedrock_block_states.json.gz";
     private static final String ITEMS_RESOURCE = "/bedrock/bedrock_items.json.gz";
 
+    /** Network id of {@code minecraft:air}, used for fully empty sub-chunks. */
+    private static final int AIR_NETWORK_ID = BedrockBlockHash.hash("minecraft:air", Map.of());
+
     private static volatile DefinitionRegistry<BlockDefinition> blocks;
     private static volatile DefinitionRegistry<ItemDefinition> items;
+    private static volatile Map<Integer, String> blockNames;
 
     private BedrockStaticDefinitions() {
     }
@@ -91,6 +95,7 @@ public final class BedrockStaticDefinitions {
         try {
             JsonArray array = readResource(BLOCKS_RESOURCE).getAsJsonArray("blocks");
             List<BlockDefinition> definitions = new ArrayList<>(array.size());
+            Map<Integer, String> names = new java.util.HashMap<>(array.size());
             for (JsonElement element : array) {
                 JsonObject entry = element.getAsJsonObject();
                 String name = entry.get("name").getAsString();
@@ -102,13 +107,37 @@ public final class BedrockStaticDefinitions {
                 }
                 int runtimeId = BedrockBlockHash.hash(name, states);
                 definitions.add(new SimpleBlockDefinition(name, runtimeId, nbt.build()));
+                names.put(runtimeId, name);
             }
+            blockNames = names;
             logger.info("Loaded {} Bedrock block definitions", definitions.size());
             return SimpleDefinitionRegistry.<BlockDefinition>builder().addAll(definitions).build();
         } catch (Exception e) {
             logger.error("Failed to load Bedrock block definitions", e);
+            blockNames = Map.of();
             return SimpleDefinitionRegistry.<BlockDefinition>builder().build();
         }
+    }
+
+    /**
+     * @return the network id of {@code minecraft:air}
+     */
+    public static int airNetworkId() {
+        return AIR_NETWORK_ID;
+    }
+
+    /**
+     * Resolves a hashed block network id to its identifier.
+     *
+     * @param networkId the hashed block state id
+     * @return the identifier, or {@code minecraft:unknown} when it is not bundled
+     */
+    public static String blockName(int networkId) {
+        blocks();
+        Map<Integer, String> names = blockNames;
+        return names == null
+                ? "minecraft:unknown"
+                : names.getOrDefault(networkId, "minecraft:unknown");
     }
 
     private static DefinitionRegistry<ItemDefinition> loadItems() {

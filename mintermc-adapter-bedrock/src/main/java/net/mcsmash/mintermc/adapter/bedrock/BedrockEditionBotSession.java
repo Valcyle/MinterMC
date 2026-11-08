@@ -10,6 +10,8 @@ import net.mcsmash.mintermc.adapter.bedrock.network.BedrockLoginHelper;
 import net.mcsmash.mintermc.adapter.bedrock.network.BedrockNetherNetConnector;
 import net.mcsmash.mintermc.adapter.bedrock.network.BedrockStaticDefinitions;
 import net.mcsmash.mintermc.adapter.bedrock.network.MinterLoginSerializer;
+import net.mcsmash.mintermc.adapter.bedrock.world.BedrockBlock;
+import net.mcsmash.mintermc.adapter.bedrock.world.SectionKey;
 import net.mcsmash.mintermc.api.block.Block;
 import net.mcsmash.mintermc.api.bot.BotOptions;
 import net.mcsmash.mintermc.api.math.Location;
@@ -20,6 +22,7 @@ import org.cloudburstmc.netty.channel.raknet.config.RakChannelOption;
 import org.cloudburstmc.netty.util.nethernet.OperatorIdentity;
 import org.cloudburstmc.math.vector.Vector2f;
 import org.cloudburstmc.math.vector.Vector3f;
+import org.cloudburstmc.math.vector.Vector3i;
 import org.cloudburstmc.protocol.bedrock.BedrockClientSession;
 import org.cloudburstmc.protocol.bedrock.BedrockPeer;
 import org.cloudburstmc.protocol.bedrock.codec.BedrockCodec;
@@ -40,8 +43,11 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -73,6 +79,20 @@ public class BedrockEditionBotSession extends BotSession {
     private float lastX;
     private float lastY;
     private float lastZ;
+    private volatile int dimension;
+
+    /** Upper bound for cached sub-chunks; each entry holds 4096 block ids. */
+    private static final int MAX_CACHED_SECTIONS = 2048;
+    /** Decoded sub-chunks, keyed by section. */
+    private final Map<SectionKey, int[]> sections = java.util.Collections.synchronizedMap(
+            new java.util.LinkedHashMap<>(256, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<SectionKey, int[]> eldest) {
+                    return size() > MAX_CACHED_SECTIONS;
+                }
+            });
+    /** Sub-chunk requests that are waiting for a server response. */
+    private final Map<SectionKey, CompletableFuture<int[]>> pendingSections = new ConcurrentHashMap<>();
 
     public BedrockEditionBotSession(String sessionToken) {
         super(sessionToken);
@@ -97,8 +117,92 @@ public class BedrockEditionBotSession extends BotSession {
 
     @Override
     public Block getBlockAt(Vector3 position) {
-        // TODO: Implement block retrieval logic
-        return null;
+        int blockX = (int) Math.floor(position.getX());
+        int blockY = (int) Math.floor(position.getY());
+        int blockZ = (int) Math.floor(position.getZ());
+        if (blockY < -64 || blockY > 319) {
+            // Outside the vanilla overworld height limits.
+            return null;
+        }
+        SectionKey key = new SectionKey(blockX >> 4, blockY >> 4, blockZ >> 4);
+        int[] section = sections.get(key);
+        if (section == null) {
+            section = loadSection(key);
+            if (section == null) {
+                return null;
+            }
+        }
+        // Blocks are stored in XZY order.
+        int index = ((blockX & 15) << 8) | ((blockZ & 15) << 4) | (blockY & 15);
+        String material = BedrockStaticDefinitions.blockName(section[index]);
+        return new BedrockBlock(blockX, blockY, blockZ, material);
+    }
+
+    /**
+     * Requests a sub-chunk and waits for the server response.
+     *
+     * @param key the section to load
+     * @return the decoded block hashes, or {@code null} on timeout
+     */
+    private int[] loadSection(SectionKey key) {
+        CompletableFuture<int[]> pending = new CompletableFuture<>();
+        CompletableFuture<int[]> existing = pendingSections.putIfAbsent(key, pending);
+        if (existing == null) {
+            requestSubChunk(key.x(), key.y(), key.z());
+        } else {
+            pending = existing;
+        }
+        try {
+            return pending.get(2, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            pendingSections.remove(key, pending);
+            return null;
+        } catch (Exception e) {
+            pendingSections.remove(key, pending);
+            return null;
+        }
+    }
+
+    /**
+     * Stores a sub-chunk received from the server.
+     *
+     * @param chunkX   the chunk X coordinate
+     * @param sectionY the sub-chunk index
+     * @param chunkZ   the chunk Z coordinate
+     * @param blocks   4096 block state hashes in XZY order
+     */
+    public void acceptSection(int chunkX, int sectionY, int chunkZ, int[] blocks) {
+        SectionKey key = new SectionKey(chunkX, sectionY, chunkZ);
+        sections.put(key, blocks);
+        CompletableFuture<int[]> pending = pendingSections.remove(key);
+        if (pending != null) {
+            pending.complete(blocks);
+        }
+    }
+
+    /**
+     * Releases a sub-chunk request that the server could not answer.
+     *
+     * @param chunkX   the chunk X coordinate
+     * @param sectionY the sub-chunk index
+     * @param chunkZ   the chunk Z coordinate
+     */
+    public void rejectSection(int chunkX, int sectionY, int chunkZ) {
+        CompletableFuture<int[]> pending =
+                pendingSections.remove(new SectionKey(chunkX, sectionY, chunkZ));
+        if (pending != null) {
+            pending.complete(null);
+        }
+    }
+
+    /**
+     * Sets the dimension reported by {@code StartGame}.
+     *
+     * @param dimension the Bedrock dimension id
+     */
+    public void setDimension(int dimension) {
+        this.dimension = dimension;
     }
 
     @Override
@@ -328,6 +432,29 @@ public class BedrockEditionBotSession extends BotSession {
         lastX = x;
         lastY = y;
         lastZ = z;
+    }
+
+    /**
+     * Requests one sub-chunk from the server.
+     * <br>
+     * Since 1.18.30 the level chunk packet only carries biome and height data;
+     * block storage is fetched on demand with {@code SubChunkRequest}.
+     *
+     * @param chunkX   the chunk X coordinate
+     * @param sectionY the sub-chunk index, where 0 covers Y 0-15
+     * @param chunkZ   the chunk Z coordinate
+     */
+    public void requestSubChunk(int chunkX, int sectionY, int chunkZ) {
+        BedrockClientSession current = this.session;
+        if (current == null || !current.isConnected()) {
+            return;
+        }
+        org.cloudburstmc.protocol.bedrock.packet.SubChunkRequestPacket request =
+                new org.cloudburstmc.protocol.bedrock.packet.SubChunkRequestPacket();
+        request.setDimension(dimension);
+        request.setSubChunkPosition(Vector3i.from(chunkX, sectionY, chunkZ));
+        request.setPositionOffsets(List.of(Vector3i.ZERO));
+        current.sendPacketImmediately(request);
     }
 
     private static UUID resolveOfflineIdentity(String username) {

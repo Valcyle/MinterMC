@@ -50,6 +50,11 @@ class MinterBotServiceStub(object):
                 request_serializer=bot__service__pb2.MoveRequest.SerializeToString,
                 response_deserializer=bot__service__pb2.MoveResponse.FromString,
                 _registered_method=True)
+        self.GetBlock = channel.unary_unary(
+                '/MinterBotService/GetBlock',
+                request_serializer=bot__service__pb2.BlockRequest.SerializeToString,
+                response_deserializer=bot__service__pb2.BlockResponse.FromString,
+                _registered_method=True)
         self.EventStream = channel.stream_stream(
                 '/MinterBotService/EventStream',
                 request_serializer=bot__service__pb2.ClientCommand.SerializeToString,
@@ -82,6 +87,13 @@ class MinterBotServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GetBlock(self, request, context):
+        """Retrieve the block at the specified coordinates
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def EventStream(self, request_iterator, context):
         """[IMPORTANT] Event subscription and command sending via bidirectional streaming
         This allows the SDK to hook into asynchronous events such as chat and block breaking
@@ -107,6 +119,11 @@ def add_MinterBotServiceServicer_to_server(servicer, server):
                     servicer.MoveTo,
                     request_deserializer=bot__service__pb2.MoveRequest.FromString,
                     response_serializer=bot__service__pb2.MoveResponse.SerializeToString,
+            ),
+            'GetBlock': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetBlock,
+                    request_deserializer=bot__service__pb2.BlockRequest.FromString,
+                    response_serializer=bot__service__pb2.BlockResponse.SerializeToString,
             ),
             'EventStream': grpc.stream_stream_rpc_method_handler(
                     servicer.EventStream,
@@ -196,6 +213,33 @@ class MinterBotService(object):
             '/MinterBotService/MoveTo',
             bot__service__pb2.MoveRequest.SerializeToString,
             bot__service__pb2.MoveResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetBlock(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/MinterBotService/GetBlock',
+            bot__service__pb2.BlockRequest.SerializeToString,
+            bot__service__pb2.BlockResponse.FromString,
             options,
             channel_credentials,
             insecure,
