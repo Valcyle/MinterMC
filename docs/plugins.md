@@ -104,6 +104,8 @@ One tick is 50 ms. Scheduled tasks stop automatically when the session ends.
   in tight loops.
 - `getLoadedBlockAt` never waits and returns `null` when the section is not
   cached yet. Prefer it for pathfinding and per-tick checks.
+- `getLocation().y` is the position Bedrock reports, which is at eye level:
+  subtract `1.62` to get the block the player stands on.
 
 ## Build and install
 
@@ -121,4 +123,4 @@ under `plugin-data/<PluginClassName>/`.
 | Example | Command | Notes |
 |---|---|---|
 | [`examples/plugins/ping`](../examples/plugins/ping) | `.ping` | Replies with `pong from <bot>` |
-| [`examples/plugins/nav`](../examples/plugins/nav) | `.goto <x> <z>` | A* over cached blocks, single Y level |
+| [`examples/plugins/nav`](../examples/plugins/nav) | `.goto <x> <z>` | A* over cached blocks; same level or drops, no jump |
