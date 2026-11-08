@@ -4,6 +4,7 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioDatagramChannel;
+import io.netty.util.concurrent.ScheduledFuture;
 import net.mcsmash.mintermc.adapter.bedrock.network.BedrockBotPacketHandler;
 import net.mcsmash.mintermc.adapter.bedrock.network.BedrockLoginHelper;
 import net.mcsmash.mintermc.adapter.bedrock.network.BedrockNetherNetConnector;
@@ -11,18 +12,27 @@ import net.mcsmash.mintermc.adapter.bedrock.network.BedrockStaticDefinitions;
 import net.mcsmash.mintermc.adapter.bedrock.network.MinterLoginSerializer;
 import net.mcsmash.mintermc.api.block.Block;
 import net.mcsmash.mintermc.api.bot.BotOptions;
+import net.mcsmash.mintermc.api.math.Location;
 import net.mcsmash.mintermc.api.math.Vector3;
 import net.mcsmash.mintermc.core.BotSession;
 import org.cloudburstmc.netty.channel.raknet.RakChannelFactory;
 import org.cloudburstmc.netty.channel.raknet.config.RakChannelOption;
 import org.cloudburstmc.netty.util.nethernet.OperatorIdentity;
+import org.cloudburstmc.math.vector.Vector2f;
+import org.cloudburstmc.math.vector.Vector3f;
 import org.cloudburstmc.protocol.bedrock.BedrockClientSession;
 import org.cloudburstmc.protocol.bedrock.BedrockPeer;
 import org.cloudburstmc.protocol.bedrock.codec.BedrockCodec;
 import org.cloudburstmc.protocol.bedrock.codec.v2225.Bedrock_v2225;
+import org.cloudburstmc.protocol.bedrock.data.ClientPlayMode;
+import org.cloudburstmc.protocol.bedrock.data.InputInteractionModel;
+import org.cloudburstmc.protocol.bedrock.data.InputMode;
+import org.cloudburstmc.protocol.bedrock.data.PlayerAuthInputData;
 import org.cloudburstmc.protocol.bedrock.netty.initializer.BedrockClientInitializer;
 import org.cloudburstmc.protocol.bedrock.packet.LoginPacket;
+import org.cloudburstmc.protocol.bedrock.packet.PlayerAuthInputPacket;
 import org.cloudburstmc.protocol.bedrock.packet.RequestNetworkSettingsPacket;
+import org.cloudburstmc.protocol.bedrock.packet.TextPacket;
 import org.cloudburstmc.protocol.bedrock.util.EncryptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +42,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Bedrock Edition implementation of a bot session.
@@ -49,11 +60,19 @@ public class BedrockEditionBotSession extends BotSession {
             .updateSerializer(LoginPacket.class, new MinterLoginSerializer())
             .build();
 
+    /** One movement report per server tick. */
+    private static final long AUTH_INPUT_INTERVAL_MS = 50;
+
     private volatile BedrockClientSession session;
     private volatile NioEventLoopGroup eventLoopGroup;
     private volatile boolean loggedIn;
     private volatile boolean spawned;
     private volatile long runtimeEntityId;
+    private volatile ScheduledFuture<?> authInputTask;
+    private long authInputTick;
+    private float lastX;
+    private float lastY;
+    private float lastZ;
 
     public BedrockEditionBotSession(String sessionToken) {
         super(sessionToken);
@@ -84,7 +103,23 @@ public class BedrockEditionBotSession extends BotSession {
 
     @Override
     public void chat(String message) {
-        // TODO: Implement chat logic
+        BedrockClientSession current = this.session;
+        if (current == null || !current.isConnected()) {
+            logger.warn("Cannot send chat from {}: the session is not connected", getUsername());
+            return;
+        }
+        TextPacket packet = new TextPacket();
+        packet.setType(TextPacket.Type.CHAT);
+        packet.setSourceName(getUsername());
+        packet.setMessage(message);
+        packet.setNeedsTranslation(false);
+        // BDS drops client chat that carries no XUID, so offline identities send
+        // the placeholder that the self-signed login token advertises.
+        packet.setXuid(BedrockLoginHelper.SELF_SIGNED_XUID);
+        // Packet writes must happen on the channel's event loop.
+        current.getPeer().getChannel().eventLoop().execute(
+                () -> current.sendPacketImmediately(packet));
+        logger.debug("Sent Bedrock chat as {}: {}", getUsername(), message);
     }
 
     @Override
@@ -218,6 +253,11 @@ public class BedrockEditionBotSession extends BotSession {
     }
 
     private void closeConnection() {
+        ScheduledFuture<?> task = this.authInputTask;
+        if (task != null) {
+            task.cancel(false);
+            this.authInputTask = null;
+        }
         BedrockClientSession current = this.session;
         if (current != null && current.isConnected()) {
             current.disconnect("MinterMC session closed");
@@ -227,6 +267,67 @@ public class BedrockEditionBotSession extends BotSession {
             group.shutdownGracefully();
             this.eventLoopGroup = null;
         }
+    }
+
+    /**
+     * Starts the server-authoritative movement loop.
+     * <br>
+     * BDS uses server authoritative movement, so the client must report its
+     * position once per tick with {@code PlayerAuthInput}. Servers also use these
+     * reports to confirm that a player has actually entered the world, which
+     * gates chat and player-list visibility.
+     */
+    public void startAuthInputLoop() {
+        if (authInputTask != null) {
+            return;
+        }
+        BedrockClientSession current = this.session;
+        if (current == null) {
+            return;
+        }
+        authInputTask = current.getPeer().getChannel().eventLoop().scheduleAtFixedRate(
+                this::sendAuthInput, 0, AUTH_INPUT_INTERVAL_MS, TimeUnit.MILLISECONDS);
+        logger.debug("Started Bedrock movement reports for {}", getUsername());
+    }
+
+    private void sendAuthInput() {
+        BedrockClientSession current = this.session;
+        if (current == null || !current.isConnected() || !loggedIn) {
+            return;
+        }
+        Location location = getLocation();
+        Vector3 position = location.getPosition();
+        float x = (float) position.getX();
+        float y = (float) position.getY();
+        float z = (float) position.getZ();
+        float pitch = (float) location.getPitch();
+        float yaw = (float) location.getYaw();
+
+        double yawRadians = Math.toRadians(yaw);
+        double pitchRadians = Math.toRadians(pitch);
+
+        PlayerAuthInputPacket packet = new PlayerAuthInputPacket();
+        packet.setRotation(Vector3f.from(pitch, yaw, yaw));
+        packet.setPosition(Vector3f.from(x, y, z));
+        packet.setMotion(Vector2f.ZERO);
+        packet.getInputData().add(PlayerAuthInputData.RECEIVED_SERVER_DATA);
+        packet.setInputMode(InputMode.MOUSE);
+        packet.setPlayMode(ClientPlayMode.NORMAL);
+        packet.setInputInteractionModel(InputInteractionModel.CROSSHAIR);
+        packet.setInteractRotation(Vector2f.from(pitch, yaw));
+        packet.setTick(authInputTick++);
+        packet.setDelta(Vector3f.from(x - lastX, y - lastY, z - lastZ));
+        packet.setAnalogMoveVector(Vector2f.ZERO);
+        packet.setCameraOrientation(Vector3f.from(
+                (float) (-Math.sin(yawRadians) * Math.cos(pitchRadians)),
+                (float) (-Math.sin(pitchRadians)),
+                (float) (Math.cos(yawRadians) * Math.cos(pitchRadians))));
+        packet.setRawMoveVector(Vector2f.ZERO);
+        current.sendPacketImmediately(packet);
+
+        lastX = x;
+        lastY = y;
+        lastZ = z;
     }
 
     private static UUID resolveOfflineIdentity(String username) {

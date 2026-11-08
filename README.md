@@ -26,6 +26,7 @@ Check out [`examples`](examples/) folder for more examples.
 # Features
 
 - **Protocol Abstraction** — Control Java Edition and Bedrock Edition bots through a single unified API
+- **Chat and Events** — Send chat and receive server events over the bidirectional `EventStream` RPC
 - **Language Agnostic** — Any language with a gRPC client can control bots (Python, TypeScript, Go, etc.)
 - **Agent-per-Bot Model** — Each bot runs on its own Java 25 Virtual Thread for full isolation
 - **Plugin System** — Drop a JAR into `plugins/` to extend bot behavior (pathfinding, combat, etc.)
@@ -71,7 +72,7 @@ public class MyPlugin implements MinterPlugin {
 
 # Note
 
-This project is currently in early development. The gRPC server and plugin system are work in progress. The Java Edition and Bedrock Edition adapters are functional; Bedrock block/item registries and world interaction are still being implemented.
+This project is currently in early development. The gRPC server and plugin system are work in progress. The Java Edition and Bedrock Edition adapters are functional. Bedrock block and item registries are loaded; world interaction is still being implemented.
 
 > [!NOTE] 
 > MinterMC uses [MCProtocolLib](https://github.com/GeyserMC/MCProtocolLib) for Java Edition adapter implementation.

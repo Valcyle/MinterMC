@@ -111,9 +111,37 @@ public class MinterBotServiceImpl extends MinterBotServiceGrpc.MinterBotServiceI
 
     @Override
     public StreamObserver<ClientCommand> eventStream(StreamObserver<ServerEvent> responseObserver) {
-        // Here we handle the bi-directional stream for events like chat messages.
+        // Here we handle the bi-directional stream for commands and events.
         return new StreamObserver<ClientCommand>() {
+            private final Object sendLock = new Object();
             private BotSession session;
+            private boolean subscribed;
+
+            private final BotSessionListener listener = (sender, content) -> {
+                ServerEvent event = ServerEvent.newBuilder()
+                        .setChatReceived(ChatMessage.newBuilder()
+                                .setSender(sender)
+                                .setContent(content)
+                                .setTimestamp(System.currentTimeMillis())
+                                .build())
+                        .build();
+                try {
+                    synchronized (sendLock) {
+                        responseObserver.onNext(event);
+                    }
+                } catch (Exception e) {
+                    logger.debug("Could not deliver a chat event to the SDK", e);
+                }
+            };
+
+            private void detach() {
+                if (subscribed && session != null) {
+                    session.removeListener(listener);
+                    subscribed = false;
+                    logger.debug("Detached the SDK listener from session {}",
+                            session.getSessionToken());
+                }
+            }
 
             @Override
             public void onNext(ClientCommand command) {
@@ -125,6 +153,9 @@ public class MinterBotServiceImpl extends MinterBotServiceGrpc.MinterBotServiceI
                                 .asRuntimeException());
                         return;
                     }
+                    session.addListener(listener);
+                    subscribed = true;
+                    logger.debug("Attached an SDK listener to session {}", command.getSessionId());
                 }
 
                 if (command.hasChatMessage()) {
@@ -136,14 +167,13 @@ public class MinterBotServiceImpl extends MinterBotServiceGrpc.MinterBotServiceI
             @Override
             public void onError(Throwable t) {
                 logger.warn("Event stream error", t);
-                if (session != null) {
-                    session.disconnect(); // Terminate gracefully
-                }
+                detach();
             }
 
             @Override
             public void onCompleted() {
                 logger.info("Event stream completed by client");
+                detach();
                 responseObserver.onCompleted();
             }
         };

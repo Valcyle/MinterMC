@@ -137,6 +137,7 @@ public class BedrockBotPacketHandler implements BedrockPacketHandler {
             case PLAYER_SPAWN -> {
                 bot.setSpawned(true);
                 sendLocalPlayerInitialized();
+                bot.startAuthInputLoop();
                 logger.info("Bedrock bot {} spawned", bot.getUsername());
             }
             default -> {
@@ -197,6 +198,7 @@ public class BedrockBotPacketHandler implements BedrockPacketHandler {
         // already set the flag and we initialize here instead.
         if (bot.isSpawned()) {
             sendLocalPlayerInitialized();
+            bot.startAuthInputLoop();
         }
 
         logger.info("Bedrock bot {} joined the world at {}", bot.getUsername(), bot.getLocation());
@@ -300,8 +302,68 @@ public class BedrockBotPacketHandler implements BedrockPacketHandler {
 
     @Override
     public PacketSignal handle(TextPacket packet) {
-        logger.info("[Bedrock chat] {}: {}", packet.getSourceName(), packet.getMessage());
+        String sender = "";
+        String content;
+        switch (packet.getType()) {
+            case CHAT, WHISPER, ANNOUNCEMENT -> {
+                sender = packet.getSourceName() == null
+                        ? ""
+                        : stripFormatting(packet.getSourceName());
+                content = stripFormatting(
+                        packet.getMessage() == null ? "" : packet.getMessage().toString());
+            }
+            default -> content = renderMessage(packet);
+        }
+        logger.info("[Bedrock chat] {}: {}", sender.isEmpty() ? "server" : sender, content);
+        bot.notifyChatMessage(sender, content);
         return PacketSignal.HANDLED;
+    }
+
+    /**
+     * Resolves a server message to plain text.
+     * <br>
+     * BDS sends player notices and announcements as translation keys with
+     * parameters. The full client translation table is not bundled, so the common
+     * keys are rendered and any unknown key keeps its parameters visible.
+     */
+    private static String renderMessage(TextPacket packet) {
+        String message = packet.getMessage() == null ? "" : packet.getMessage().toString();
+        message = stripFormatting(message);
+        if (packet.getType() != TextPacket.Type.TRANSLATION && !packet.isNeedsTranslation()) {
+            return message;
+        }
+        String key = message.startsWith("%") ? message.substring(1) : message;
+        String template = switch (key) {
+            case "multiplayer.player.joined" -> "%s joined the game";
+            case "multiplayer.player.left" -> "%s left the game";
+            case "chat.type.text" -> "<%s> %s";
+            case "chat.type.announcement" -> "[%s] %s";
+            default -> null;
+        };
+        if (template == null) {
+            return packet.getParameters().isEmpty()
+                    ? key
+                    : key + " " + String.join(" ", packet.getParameters());
+        }
+        StringBuilder rendered = new StringBuilder();
+        int cursor = 0;
+        for (int index = 0; ; index++) {
+            int at = template.indexOf("%s", cursor);
+            if (at < 0) {
+                break;
+            }
+            rendered.append(template, cursor, at);
+            if (index < packet.getParameters().size()) {
+                rendered.append(packet.getParameters().get(index));
+            }
+            cursor = at + 2;
+        }
+        rendered.append(template.substring(cursor));
+        return rendered.toString();
+    }
+
+    private static String stripFormatting(String message) {
+        return message.replaceAll("\u00A7.", "");
     }
 
     @Override

@@ -7,7 +7,7 @@ This guide describes how to connect MinterMC to a Minecraft server.
 ## 1. Start the MinterMC server
 
 ```powershell
-cd C:\path\to\MinterMC
+cd path\to\MinterMC
 .\gradlew :mintermc-server:run
 ```
 
@@ -147,13 +147,38 @@ For Nukkit, use a server with `xbox-auth=off`.
 
 ---
 
-## 5. Non-fatal decode errors
+## 5. Position and spawn values
 
-Cloudburst may log exceptions while decoding `CraftingDataPacket`, `ItemComponentPacket`, or `CreativeContentPacket`. These occur because the item definition registry is not populated yet, but the connection and spawn continue. If the log contains `joined the world` and `spawned`, the test succeeded.
+`StartGame` carries the level spawn point, and a level whose spawn was never
+finalised can store a placeholder Y value. The bot reports the value it
+received and keeps sending `PlayerAuthInput`; the server sends a `MovePlayer`
+correction once it has an authoritative position. A Y value outside the world
+height is therefore a level data issue, not a decode failure.
 
 ---
 
-## 6. Cleanup
+## 6. Chat
+
+Chat can be sent and received over the `EventStream` RPC.
+
+```powershell
+$env:MINTER_CHAT = "hello from mintermc"
+.\.venv\Scripts\python.exe examples\python\chat_be.py
+```
+
+The server log contains a `[Bedrock chat]` line for every message the bot
+receives, and the sample prints each `chat_received` event. A chat message the
+bot sends is echoed back by the server, which confirms that it was accepted.
+
+Bedrock servers only relay chat between players that have a resolvable
+identity. A bot that uses a self-signed offline identity can send and receive
+its own messages, but the official BDS does not always forward those messages
+to other self-signed players. Use `online-mode=true` with real accounts when
+cross-player chat is required.
+
+---
+
+## 7. Cleanup
 
 - Stop `gradlew :mintermc-server:run` with `Ctrl+C`.
 - If you started a test server, stop the process and restore its configuration.

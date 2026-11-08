@@ -45,6 +45,14 @@ public class BedrockLoginHelper {
     private static final String MULTIPLAYER_AUDIENCE = "api://auth-minecraft-services/multiplayer";
 
     /**
+     * XUID advertised by the self-signed login token.
+     * <br>
+     * BDS also expects client chat packets to carry the same value; a packet with
+     * an empty XUID is accepted but never relayed to the other players.
+     */
+    public static final String SELF_SIGNED_XUID = "0";
+
+    /**
      * MinterMC's own generated classic skin.
      * <br>
      * This is deliberately generated instead of bundling Mojang's Steve/persona
@@ -217,7 +225,7 @@ public class BedrockLoginHelper {
         claims.setIssuer("self");
         claims.setAudience(MULTIPLAYER_AUDIENCE);
         claims.setClaim("cpk", publicKey);
-        claims.setClaim("xid", "0");
+        claims.setClaim("xid", SELF_SIGNED_XUID);
         claims.setClaim("xname", username);
         claims.setClaim("identity", identity.toString());
         claims.setClaim("leguuid", identity.toString());

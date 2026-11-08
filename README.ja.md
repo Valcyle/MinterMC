@@ -26,6 +26,7 @@ Python、C++、JavaScript、Java のサンプルがあります。
 # Features
 
 - **Protocol Abstraction** — Java Edition と Bedrock Edition のボットを単一の API で操作
+- **Chat and Events** — 双方向 `EventStream` RPC でチャット送信とサーバーイベントの受信が可能
 - **Language Agnostic** — gRPC クライアントがあれば任意の言語から操作可能（Python、TypeScript、Go など）
 - **Agent-per-Bot Model** — 各ボットは Java 25 の仮想スレッド上で動作し、完全に分離
 - **Plugin System** — `plugins/` に JAR を置くだけでボットの動作を拡張（経路探索、戦闘など）
@@ -71,7 +72,7 @@ public class MyPlugin implements MinterPlugin {
 
 # Note
 
-本プロジェクトは初期開発段階です。gRPC サーバーとプラグインシステムは開発中です。Java Edition と Bedrock Edition のアダプタは動作していますが、Bedrock のブロック・アイテムレジストリとワールド操作はまだ実装中です。
+本プロジェクトは初期開発段階です。gRPC サーバーとプラグインシステムは開発中です。Java Edition と Bedrock Edition のアダプタは動作しています。Bedrock のブロック・アイテムレジストリは読み込み済みで、ワールド操作はまだ実装中です。
 
 > [!NOTE] 
 > MinterMC は Java Edition アダプタに [MCProtocolLib](https://github.com/GeyserMC/MCProtocolLib) を使用しています。
