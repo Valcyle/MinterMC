@@ -38,6 +38,11 @@ Check out [`examples`](examples/) folder for more examples.
 
 - Java 25+
 
+For multiple Bedrock bots, configure the server with a UDP port range such as
+`server-udp-ports=19132-19232` instead of a single shared port. On BDS 1.26.x,
+the single-port mode drops one of several simultaneous NetherNet connections.
+See [docs/testing.md](docs/testing.md) for details.
+
 # Installation
 
 ```bash

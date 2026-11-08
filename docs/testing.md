@@ -113,7 +113,15 @@ online-mode=false
 allow-list=false
 server-port=19132
 transport=nethernet
+# BDS 1.26.x: a single shared UDP port drops one of several simultaneous
+# NetherNet connections. Use a range large enough for the number of bots.
+server-udp-ports=19132-19232
 ```
+
+The port range must cover the maximum number of bots that connect at the same
+time, including bots that are still negotiating. With the default single port
+(`server-udp-ports=19132`), the first bot spawns but one connection loses ICE
+connectivity as soon as another bot spawns.
 
 Start MinterMC with the default `nethernet` transport:
 
@@ -170,11 +178,10 @@ The server log contains a `[Bedrock chat]` line for every message the bot
 receives, and the sample prints each `chat_received` event. A chat message the
 bot sends is echoed back by the server, which confirms that it was accepted.
 
-Bedrock servers only relay chat between players that have a resolvable
-identity. A bot that uses a self-signed offline identity can send and receive
-its own messages, but the official BDS does not always forward those messages
-to other self-signed players. Use `online-mode=true` with real accounts when
-cross-player chat is required.
+Each bot advertises its own XUID through its self-signed login token, and chat
+packets carry the same value. On BDS 1.26.x this makes the server relay chat
+between bots. A message with an empty XUID is accepted by the server but is not
+forwarded to other players.
 
 ---
 

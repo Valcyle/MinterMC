@@ -38,6 +38,11 @@ Python、C++、JavaScript、Java のサンプルがあります。
 
 - Java 25+
 
+Bedrock で複数のボットを接続する場合は、サーバー側で
+`server-udp-ports=19132-19232` のような UDP ポート範囲を設定してください。
+BDS 1.26.x の単一ポート共有モードでは、同時に接続した NetherNet 接続の一部が
+切断されます。詳細は [docs/testing.md](docs/testing.md) を参照してください。
+
 # Installation
 
 ```bash
