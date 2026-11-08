@@ -64,12 +64,19 @@ Connect to the server using any gRPC client with the service definition in:
 ```java
 public class MyPlugin implements MinterPlugin {
     @Override
-    public void onEnable() { /* setup */ }
+    public void onEnable(PluginContext context) {
+        context.registerCommand("ping", (bot, command, args) ->
+                bot.chat("pong from " + bot.getUsername()));
+    }
 
     @Override
     public void onDisable() { /* cleanup */ }
 }
 ```
+
+Plugins receive events, commands and scheduling through `PluginContext` and
+`Bot`. See [`docs/plugins.md`](docs/plugins.md) for the full API and
+[`examples/plugins`](examples/plugins) for a buildable example.
 
 # Note
 

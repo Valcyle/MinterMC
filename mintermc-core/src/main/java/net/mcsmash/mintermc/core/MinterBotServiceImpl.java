@@ -21,10 +21,15 @@ public class MinterBotServiceImpl extends MinterBotServiceGrpc.MinterBotServiceI
     private static final Logger logger = LoggerFactory.getLogger(MinterBotServiceImpl.class);
     private final BotManager botManager;
     private final BotSessionFactory sessionFactory;
+    private final PluginManager pluginManager;
+    private final CommandRegistry commandRegistry;
 
-    public MinterBotServiceImpl(BotManager botManager, BotSessionFactory sessionFactory) {
+    public MinterBotServiceImpl(BotManager botManager, BotSessionFactory sessionFactory,
+            PluginManager pluginManager, CommandRegistry commandRegistry) {
         this.botManager = botManager;
         this.sessionFactory = sessionFactory;
+        this.pluginManager = pluginManager;
+        this.commandRegistry = commandRegistry;
     }
 
     @Override
@@ -39,8 +44,11 @@ public class MinterBotServiceImpl extends MinterBotServiceGrpc.MinterBotServiceI
             BotSession session = sessionFactory.create(sessionToken, request);
 
             // Register and start the virtual thread loop
+            session.setUniqueId(UUID.randomUUID());
+            session.setCommandRegistry(commandRegistry);
             botManager.registerSession(session);
             session.startEventLoop();
+            pluginManager.notifyBotJoin(session);
 
             LoginResponse response = LoginResponse.newBuilder()
                     .setSuccess(true)

@@ -27,3 +27,9 @@ tasks.jar {
         )
     }
 }
+
+tasks.named<JavaExec>("run") {
+    // Resolve plugins/ and plugin-data/ from the repository root so the layout
+    // matches the documentation.
+    workingDir = rootProject.projectDir
+}

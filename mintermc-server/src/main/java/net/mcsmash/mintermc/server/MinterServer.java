@@ -2,6 +2,7 @@ package net.mcsmash.mintermc.server;
 
 import net.mcsmash.mintermc.adapter.bedrock.BedrockEditionBotSession;
 import net.mcsmash.mintermc.core.BotManager;
+import net.mcsmash.mintermc.core.CommandRegistry;
 import net.mcsmash.mintermc.core.MinterBotServiceImpl;
 import net.mcsmash.mintermc.core.PluginManager;
 import io.grpc.Server;
@@ -38,11 +39,17 @@ public class MinterServer {
     private final Server server;
     private final BotManager botManager;
     private final PluginManager pluginManager;
+    private final CommandRegistry commandRegistry;
 
     public MinterServer(int port) {
         this.port = port;
         this.botManager = new BotManager();
-        this.pluginManager = new PluginManager(new java.io.File("plugins"));
+        this.commandRegistry = new CommandRegistry();
+        this.pluginManager = new PluginManager(
+                new java.io.File(envOrDefault("MINTER_PLUGIN_DIR", "plugins")),
+                new java.io.File(envOrDefault("MINTER_PLUGIN_DATA", "plugin-data")),
+                botManager,
+                commandRegistry);
 
         // Load plugins before starting the server
         this.pluginManager.loadPlugins();
@@ -91,7 +98,8 @@ public class MinterServer {
 
         // MinterBotServiceImpl handles the gRPC endpoints
         this.server = ServerBuilder.forPort(port)
-                .addService(new MinterBotServiceImpl(botManager, sessionFactory))
+                .addService(new MinterBotServiceImpl(
+                        botManager, sessionFactory, pluginManager, commandRegistry))
                 .build();
     }
 

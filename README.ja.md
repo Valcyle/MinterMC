@@ -64,12 +64,19 @@ cd MinterMC
 ```java
 public class MyPlugin implements MinterPlugin {
     @Override
-    public void onEnable() { /* setup */ }
+    public void onEnable(PluginContext context) {
+        context.registerCommand("ping", (bot, command, args) ->
+                bot.chat("pong from " + bot.getUsername()));
+    }
 
     @Override
     public void onDisable() { /* cleanup */ }
 }
 ```
+
+プラグインは `PluginContext` と `Bot` を通じてイベント、コマンド、スケジューリングを
+利用できます。詳細は [`docs/plugins.md`](docs/plugins.md)、ビルド可能な例は
+[`examples/plugins`](examples/plugins) を参照してください。
 
 # Note
 

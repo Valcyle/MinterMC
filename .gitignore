@@ -44,7 +44,8 @@ ehthumbs.db
 Thumbs.db
 
 # MinterMC specific
-plugins/
+/plugins/
+/plugin-data/
 
 # Python
 __pycache__/

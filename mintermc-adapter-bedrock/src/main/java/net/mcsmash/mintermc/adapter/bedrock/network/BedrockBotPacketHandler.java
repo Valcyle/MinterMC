@@ -143,6 +143,7 @@ public class BedrockBotPacketHandler implements BedrockPacketHandler {
                 bot.setSpawned(true);
                 sendLocalPlayerInitialized();
                 bot.startAuthInputLoop();
+                bot.notifySpawn();
                 logger.info("Bedrock bot {} spawned", bot.getUsername());
             }
             default -> {
@@ -413,6 +414,9 @@ public class BedrockBotPacketHandler implements BedrockPacketHandler {
     @Override
     public PacketSignal handle(DisconnectPacket packet) {
         logger.warn("Bedrock server disconnected {}: {}", bot.getUsername(), packet.getKickMessage());
+        bot.notifyDisconnect(packet.getKickMessage() == null
+                ? "server disconnected"
+                : packet.getKickMessage());
         return PacketSignal.HANDLED;
     }
 
@@ -432,6 +436,7 @@ public class BedrockBotPacketHandler implements BedrockPacketHandler {
     @Override
     public void onDisconnect(CharSequence reason) {
         logger.info("Bedrock session for {} closed: {}", bot.getUsername(), reason);
+        bot.notifyDisconnect(reason == null ? "connection closed" : reason.toString());
     }
 
     private void sendResourcePackResponse(ResourcePackClientResponsePacket.Status status) {
