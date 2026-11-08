@@ -46,6 +46,11 @@ Thumbs.db
 # MinterMC specific
 plugins/
 
+# Python
+__pycache__/
+*.pyc
+.venv/
+
 #test
 examples/js/node_modules
 # NetherNet sidecar

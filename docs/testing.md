@@ -7,7 +7,7 @@ MinterMC に実際のサーバーへ接続させる手順です。2026-11-07 時
 ## 1. MinterMC サーバーを起動する
 
 ```powershell
-cd C:\Users\yamad\Desktop\projects\MinterMC
+cd C:\path\to\MinterMC
 .\gradlew :mintermc-server:run
 ```
 

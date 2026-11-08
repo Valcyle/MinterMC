@@ -8,7 +8,7 @@
  *
  * Config file (path passed as argv[2]):
  * {
- *   "host": "192.168.0.25",
+ *   "host": "127.0.0.1",
  *   "privateKeyDerBase64": "<PKCS#8 DER, base64>",
  *   "token": "<NetherNet identity JWT>",
  *   "domain": "MinterMC",
