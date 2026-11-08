@@ -88,6 +88,7 @@ public class BedrockEditionBotSession extends BotSession {
     private volatile int dimension;
     private volatile MovementTarget movementTarget;
     private volatile boolean onGround;
+    private volatile String xuid = "0";
 
     /** Upper bound for cached sub-chunks; each entry holds 4096 block ids. */
     private static final int MAX_CACHED_SECTIONS = 2048;
@@ -327,9 +328,9 @@ public class BedrockEditionBotSession extends BotSession {
         packet.setSourceName(getUsername());
         packet.setMessage(message);
         packet.setNeedsTranslation(false);
-        // BDS drops client chat that carries no XUID, so offline identities send
-        // the placeholder that the self-signed login token advertises.
-        packet.setXuid(BedrockLoginHelper.SELF_SIGNED_XUID);
+        // BDS drops client chat that carries no XUID, so send the same value the
+        // self-signed login token advertises for this bot.
+        packet.setXuid(xuid);
         // Packet writes must happen on the channel's event loop.
         current.getPeer().getChannel().eventLoop().execute(
                 () -> current.sendPacketImmediately(packet));
@@ -456,6 +457,7 @@ public class BedrockEditionBotSession extends BotSession {
         } else {
             loginHelper.setSession(bedrockSession);
         }
+        this.xuid = loginHelper.xuid();
         bedrockSession.setPacketHandler(new BedrockBotPacketHandler(
                 this, bedrockSession, loginHelper, netherNet));
     }

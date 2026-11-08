@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -46,7 +47,10 @@ class BedrockLoginHelperTest {
 
         Map<String, Object> identityClaims = JsonUtil.parseJson(identityToken.getUnverifiedPayload());
         assertEquals("TestBot", identityClaims.get("xname"));
-        assertEquals("0", identityClaims.get("xid"));
+        assertEquals(helper.xuid(), identityClaims.get("xid"));
+        assertTrue(((String) identityClaims.get("xid")).matches("[1-9]\\d*"));
+        assertNotNull(identityClaims.get("mid"));
+        assertTrue(!((String) identityClaims.get("mid")).isEmpty());
         assertEquals("self", identityClaims.get("iss"));
         assertEquals("api://auth-minecraft-services/multiplayer", identityClaims.get("aud"));
         assertNotNull(identityClaims.get("exp"));
@@ -77,6 +81,16 @@ class BedrockLoginHelperTest {
         } finally {
             buffer.release();
         }
+    }
+
+    @Test
+    void assignsEachBotItsOwnXuid() {
+        BedrockLoginHelper first = new BedrockLoginHelper(
+                null, "TestBot", "1.26.60", "127.0.0.1:19132", null);
+        BedrockLoginHelper second = new BedrockLoginHelper(
+                null, "TestBot", "1.26.60", "127.0.0.1:19132", null);
+
+        assertNotEquals(first.xuid(), second.xuid());
     }
 
     @Test

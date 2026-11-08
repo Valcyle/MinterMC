@@ -47,10 +47,12 @@ public class BedrockLoginHelper {
     /**
      * XUID advertised by the self-signed login token.
      * <br>
-     * BDS also expects client chat packets to carry the same value; a packet with
-     * an empty XUID is accepted but never relayed to the other players.
+     * Each bot uses its own value so the server can tell bots apart. BDS also
+     * expects client chat packets to carry this value; a packet with an empty
+     * XUID is accepted but never relayed to other players.
      */
-    public static final String SELF_SIGNED_XUID = "0";
+    private final String xuid = Long.toUnsignedString(
+            java.util.concurrent.ThreadLocalRandom.current().nextLong(1, Long.MAX_VALUE));
 
     /**
      * MinterMC's own generated classic skin.
@@ -144,6 +146,13 @@ public class BedrockLoginHelper {
     }
 
     /**
+     * @return the XUID this bot advertises to the server
+     */
+    public String xuid() {
+        return xuid;
+    }
+
+    /**
      * Returns the multiplayer token used both for the login payload and for the NetherNet
      * identity assertion.
      * <br>
@@ -225,11 +234,11 @@ public class BedrockLoginHelper {
         claims.setIssuer("self");
         claims.setAudience(MULTIPLAYER_AUDIENCE);
         claims.setClaim("cpk", publicKey);
-        claims.setClaim("xid", SELF_SIGNED_XUID);
+        claims.setClaim("xid", xuid);
         claims.setClaim("xname", username);
         claims.setClaim("identity", identity.toString());
         claims.setClaim("leguuid", identity.toString());
-        claims.setClaim("mid", "");
+        claims.setClaim("mid", java.util.UUID.randomUUID().toString());
         claims.setIssuedAtToNow();
         claims.setNotBeforeMinutesInThePast(1);
         claims.setExpirationTimeMinutesInTheFuture(60);
