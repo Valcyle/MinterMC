@@ -115,3 +115,10 @@ jar --create --file plugins/ping.jar -C build/ping .
 
 The kernel scans the `plugins` directory on startup. Per-plugin data is stored
 under `plugin-data/<PluginClassName>/`.
+
+## Examples
+
+| Example | Command | Notes |
+|---|---|---|
+| [`examples/plugins/ping`](../examples/plugins/ping) | `.ping` | Replies with `pong from <bot>` |
+| [`examples/plugins/nav`](../examples/plugins/nav) | `.goto <x> <z>` | A* over cached blocks, single Y level |
