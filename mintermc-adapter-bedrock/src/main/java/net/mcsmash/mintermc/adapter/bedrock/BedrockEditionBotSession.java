@@ -69,6 +69,12 @@ public class BedrockEditionBotSession extends BotSession {
     /** One movement report per server tick. */
     private static final long AUTH_INPUT_INTERVAL_MS = 50;
 
+    /** Horizontal walking speed per tick. A vanilla player walks at 0.21585. */
+    private static final double WALK_SPEED_PER_TICK = 0.2;
+
+    /** Distance at which a movement request counts as reached. */
+    private static final double ARRIVE_DISTANCE = 0.5;
+
     private volatile BedrockClientSession session;
     private volatile NioEventLoopGroup eventLoopGroup;
     private volatile boolean loggedIn;
@@ -80,6 +86,7 @@ public class BedrockEditionBotSession extends BotSession {
     private float lastY;
     private float lastZ;
     private volatile int dimension;
+    private volatile MovementTarget movementTarget;
 
     /** Upper bound for cached sub-chunks; each entry holds 4096 block ids. */
     private static final int MAX_CACHED_SECTIONS = 2048;
@@ -110,9 +117,28 @@ public class BedrockEditionBotSession extends BotSession {
 
     @Override
     public CompletableFuture<Void> moveTo(Vector3 position) {
-        return CompletableFuture.runAsync(() -> {
-            // TODO: Implement movement logic
-        });
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        if (position == null || session == null || !isConnected()) {
+            future.completeExceptionally(new IllegalStateException("The bot is not connected"));
+            return future;
+        }
+        MovementTarget previous = movementTarget;
+        if (previous != null) {
+            previous.future().completeExceptionally(
+                    new java.util.concurrent.CancellationException("superseded by a new target"));
+        }
+        Location current = getLocation().getPosition() == null
+                ? new Location(new Vector3(0, 0, 0), 0, 0)
+                : getLocation();
+        double distance = Math.hypot(
+                position.getX() - current.getPosition().getX(),
+                position.getZ() - current.getPosition().getZ());
+        long timeoutNanos = (long) ((distance / WALK_SPEED_PER_TICK) * AUTH_INPUT_INTERVAL_MS
+                + 5_000) * 1_000_000L;
+        movementTarget = new MovementTarget(position, future,
+                System.nanoTime() + timeoutNanos);
+        logger.debug("Bedrock bot {} moving to {}", getUsername(), position);
+        return future;
     }
 
     @Override
@@ -357,6 +383,12 @@ public class BedrockEditionBotSession extends BotSession {
     }
 
     private void closeConnection() {
+        MovementTarget target = this.movementTarget;
+        this.movementTarget = null;
+        if (target != null) {
+            target.future().completeExceptionally(
+                    new IllegalStateException("The session was closed"));
+        }
         ScheduledFuture<?> task = this.authInputTask;
         if (task != null) {
             task.cancel(false);
@@ -406,6 +438,36 @@ public class BedrockEditionBotSession extends BotSession {
         float z = (float) position.getZ();
         float pitch = (float) location.getPitch();
         float yaw = (float) location.getYaw();
+        Vector2f motion = Vector2f.ZERO;
+
+        MovementTarget target = movementTarget;
+        if (target != null) {
+            double dx = target.position().getX() - x;
+            double dz = target.position().getZ() - z;
+            double distance = Math.hypot(dx, dz);
+            if (distance <= ARRIVE_DISTANCE) {
+                movementTarget = null;
+                target.future().complete(null);
+                logger.debug("Bedrock bot {} reached {}", getUsername(), target.position());
+            } else if (System.nanoTime() >= target.deadlineNanos()) {
+                movementTarget = null;
+                target.future().completeExceptionally(
+                        new java.util.concurrent.TimeoutException("movement timed out"));
+                logger.debug("Bedrock bot {} timed out moving to {}",
+                        getUsername(), target.position());
+            } else {
+                double step = Math.min(WALK_SPEED_PER_TICK, distance);
+                double dirX = dx / distance;
+                double dirZ = dz / distance;
+                x += (float) (dirX * step);
+                z += (float) (dirZ * step);
+                // Bedrock yaw 0 faces +Z; the camera forward vector is
+                // (-sin(yaw), *, cos(yaw)).
+                yaw = (float) Math.toDegrees(Math.atan2(-dirX, dirZ));
+                motion = Vector2f.from((float) dirX, (float) dirZ);
+                setLocation(new Location(new Vector3(x, y, z), yaw, pitch));
+            }
+        }
 
         double yawRadians = Math.toRadians(yaw);
         double pitchRadians = Math.toRadians(pitch);
@@ -413,8 +475,11 @@ public class BedrockEditionBotSession extends BotSession {
         PlayerAuthInputPacket packet = new PlayerAuthInputPacket();
         packet.setRotation(Vector3f.from(pitch, yaw, yaw));
         packet.setPosition(Vector3f.from(x, y, z));
-        packet.setMotion(Vector2f.ZERO);
+        packet.setMotion(motion);
         packet.getInputData().add(PlayerAuthInputData.RECEIVED_SERVER_DATA);
+        if (target != null && movementTarget != null) {
+            packet.getInputData().add(PlayerAuthInputData.UP);
+        }
         packet.setInputMode(InputMode.MOUSE);
         packet.setPlayMode(ClientPlayMode.NORMAL);
         packet.setInputInteractionModel(InputInteractionModel.CROSSHAIR);
@@ -459,6 +524,17 @@ public class BedrockEditionBotSession extends BotSession {
 
     private static UUID resolveOfflineIdentity(String username) {
         return UUID.nameUUIDFromBytes(("OfflinePlayer:" + username).getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * A pending straight-line movement request.
+     *
+     * @param position      the destination
+     * @param future        completed when the bot arrives or the request fails
+     * @param deadlineNanos the {@link System#nanoTime()} deadline
+     */
+    private record MovementTarget(Vector3 position, CompletableFuture<Void> future,
+            long deadlineNanos) {
     }
 
     public boolean isLoggedIn() {

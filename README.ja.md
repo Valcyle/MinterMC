@@ -28,6 +28,7 @@ Python、C++、JavaScript、Java のサンプルがあります。
 - **Protocol Abstraction** — Java Edition と Bedrock Edition のボットを単一の API で操作
 - **Chat and Events** — 双方向 `EventStream` RPC でチャット送信とサーバーイベントの受信が可能
 - **Block Access** — 読み込み済みワールドのブロック名と通過可否を取得
+- **Movement** — サーバー権威の移動で指定座標まで歩行
 - **Language Agnostic** — gRPC クライアントがあれば任意の言語から操作可能（Python、TypeScript、Go など）
 - **Agent-per-Bot Model** — 各ボットは Java 25 の仮想スレッド上で動作し、完全に分離
 - **Plugin System** — `plugins/` に JAR を置くだけでボットの動作を拡張（経路探索、戦闘など）

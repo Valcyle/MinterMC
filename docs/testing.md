@@ -196,7 +196,29 @@ are reported as `minecraft:air`.
 
 ---
 
-## 8. Cleanup
+## 8. Movement
+
+`MoveTo` walks the bot to a position. Bedrock uses server-authoritative
+movement, so the bot reports its position every tick at walking speed and the
+server validates each step.
+
+```powershell
+$env:MINTER_MOVE_X = "11"
+$env:MINTER_MOVE_Z = "23"
+.\.venv\Scripts\python.exe examples\python\move_be.py
+```
+
+Without `MINTER_MOVE_X`, `MINTER_MOVE_Y` and `MINTER_MOVE_Z`, the sample moves
+four blocks along X from the current position. `MoveTo` returns `reached=false`
+when the request times out or a new request replaces it.
+
+The current implementation moves in a straight line and keeps the Y coordinate.
+It does not avoid blocks or fall; combine it with block queries in a plugin for
+navigation.
+
+---
+
+## 9. Cleanup
 
 - Stop `gradlew :mintermc-server:run` with `Ctrl+C`.
 - If you started a test server, stop the process and restore its configuration.

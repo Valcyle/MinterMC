@@ -28,6 +28,7 @@ Check out [`examples`](examples/) folder for more examples.
 - **Protocol Abstraction** — Control Java Edition and Bedrock Edition bots through a single unified API
 - **Chat and Events** — Send chat and receive server events over the bidirectional `EventStream` RPC
 - **Block Access** — Read block identifiers and passability from the loaded world
+- **Movement** — Walk bots to coordinates with server-authoritative movement
 - **Language Agnostic** — Any language with a gRPC client can control bots (Python, TypeScript, Go, etc.)
 - **Agent-per-Bot Model** — Each bot runs on its own Java 25 Virtual Thread for full isolation
 - **Plugin System** — Drop a JAR into `plugins/` to extend bot behavior (pathfinding, combat, etc.)
