@@ -35,10 +35,11 @@ def main():
     host = os.environ.get("MINTER_TARGET_HOST", "127.0.0.1")
     port = int(os.environ.get("MINTER_TARGET_PORT", "25565"))
     name = os.environ.get("MINTER_BOT_NAME", "Python_Bot")
+    grpc_port = os.environ.get("MINTER_GRPC_PORT", "50051")
 
     print(f"--- MinterMC Python Client: Java login to {host}:{port} as {name} ---")
 
-    with grpc.insecure_channel("localhost:50051") as channel:
+    with grpc.insecure_channel(f"localhost:{grpc_port}") as channel:
         stub = bot_service_pb2_grpc.MinterBotServiceStub(channel)
 
         # EditionType is an enum, 0 = JAVA_EDITION

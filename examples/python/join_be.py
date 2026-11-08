@@ -34,10 +34,11 @@ def main():
     host = os.environ.get("MINTER_TARGET_HOST", "127.0.0.1")
     port = int(os.environ.get("MINTER_TARGET_PORT", "19132"))
     name = os.environ.get("MINTER_BOT_NAME", "Python_BE_Bot")
+    grpc_port = os.environ.get("MINTER_GRPC_PORT", "50051")
 
     print(f"--- MinterMC Python Client: Bedrock login to {host}:{port} as {name} ---")
 
-    with grpc.insecure_channel("localhost:50051") as channel:
+    with grpc.insecure_channel(f"localhost:{grpc_port}") as channel:
         stub = bot_service_pb2_grpc.MinterBotServiceStub(channel)
 
         request = bot_service_pb2.LoginRequest(

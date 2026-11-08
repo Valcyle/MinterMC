@@ -4,7 +4,13 @@ import net.mcsmash.mintermc.adapter.bedrock.BedrockEditionBotSession;
 import net.mcsmash.mintermc.api.math.Location;
 import net.mcsmash.mintermc.api.math.Vector3;
 import org.cloudburstmc.math.vector.Vector3f;
+import org.cloudburstmc.nbt.NbtList;
+import org.cloudburstmc.nbt.NbtMap;
 import org.cloudburstmc.protocol.bedrock.BedrockClientSession;
+import org.cloudburstmc.protocol.bedrock.codec.BedrockCodecHelper;
+import org.cloudburstmc.protocol.bedrock.data.definitions.BlockDefinition;
+import org.cloudburstmc.protocol.bedrock.data.definitions.ItemDefinition;
+import org.cloudburstmc.protocol.bedrock.data.definitions.SimpleBlockDefinition;
 import org.cloudburstmc.protocol.bedrock.packet.BedrockPacket;
 import org.cloudburstmc.protocol.bedrock.packet.BedrockPacketHandler;
 import org.cloudburstmc.protocol.bedrock.packet.ClientCacheStatusPacket;
@@ -29,12 +35,14 @@ import org.cloudburstmc.protocol.bedrock.netty.codec.compression.SimpleCompressi
 import org.cloudburstmc.protocol.bedrock.netty.codec.compression.SnappyCompression;
 import org.cloudburstmc.protocol.bedrock.netty.codec.compression.ZlibCompression;
 import org.cloudburstmc.protocol.common.PacketSignal;
+import org.cloudburstmc.protocol.common.SimpleDefinitionRegistry;
 import org.cloudburstmc.protocol.common.util.Zlib;
 import io.netty.channel.ChannelPipeline;
 import org.cloudburstmc.protocol.bedrock.data.PacketCompressionAlgorithm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -164,6 +172,7 @@ public class BedrockBotPacketHandler implements BedrockPacketHandler {
 
     @Override
     public PacketSignal handle(StartGamePacket packet) {
+        installDefinitions(packet);
         bot.setRuntimeEntityId(packet.getRuntimeEntityId());
 
         Vector3f position = packet.getPlayerPosition();
@@ -184,6 +193,45 @@ public class BedrockBotPacketHandler implements BedrockPacketHandler {
 
         logger.info("Bedrock bot {} joined the world at {}", bot.getUsername(), bot.getLocation());
         return PacketSignal.HANDLED;
+    }
+
+    /**
+     * Installs the block and item registries the server sent with StartGame.
+     * <br>
+     * Without these, Cloudburst cannot decode UpdateBlock, UpdateSubChunkBlocks or
+     * MobEquipment packets and logs a decode failure for each one. When the server
+     * enables block network ID hashes, the registry key is the same FNV-1a hash
+     * the retail client computes from the block state.
+     */
+    private void installDefinitions(StartGamePacket packet) {
+        BedrockCodecHelper helper = session.getPeer().getCodecHelper();
+
+        NbtList<NbtMap> palette = packet.getBlockPalette();
+        if (palette != null && !palette.isEmpty()) {
+            SimpleDefinitionRegistry.Builder<BlockDefinition> blocks = SimpleDefinitionRegistry.builder();
+            for (int runtimeId = 0; runtimeId < palette.size(); runtimeId++) {
+                NbtMap state = palette.get(runtimeId);
+                String name = state.getString("name", "minecraft:unknown");
+                NbtMap states = state.getCompound("states", NbtMap.EMPTY);
+                int id = packet.isBlockNetworkIdsHashed()
+                        ? BedrockBlockHash.hash(name, states)
+                        : runtimeId;
+                blocks.add(new SimpleBlockDefinition(name, id, states));
+            }
+            helper.setBlockDefinitions(blocks.build());
+        }
+
+        List<ItemDefinition> items = packet.getItemDefinitions();
+        if (items != null && !items.isEmpty()) {
+            helper.setItemDefinitions(SimpleDefinitionRegistry.<ItemDefinition>builder()
+                    .addAll(items)
+                    .build());
+        }
+
+        logger.debug("StartGame definitions: palette={}, items={}, hashed={}",
+                palette == null ? -1 : palette.size(),
+                items == null ? -1 : items.size(),
+                packet.isBlockNetworkIdsHashed());
     }
 
     /**
