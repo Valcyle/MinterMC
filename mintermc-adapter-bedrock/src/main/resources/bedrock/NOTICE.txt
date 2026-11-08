@@ -1,0 +1,4 @@
+Block state and item data in this directory is generated from
+PrismarineJS/minecraft-data 3.119.0 (MIT), Bedrock 1.26.60.
+
+Source: https://github.com/PrismarineJS/minecraft-data

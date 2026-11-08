@@ -7,6 +7,7 @@ import io.netty.channel.socket.nio.NioDatagramChannel;
 import net.mcsmash.mintermc.adapter.bedrock.network.BedrockBotPacketHandler;
 import net.mcsmash.mintermc.adapter.bedrock.network.BedrockLoginHelper;
 import net.mcsmash.mintermc.adapter.bedrock.network.BedrockNetherNetConnector;
+import net.mcsmash.mintermc.adapter.bedrock.network.BedrockStaticDefinitions;
 import net.mcsmash.mintermc.adapter.bedrock.network.MinterLoginSerializer;
 import net.mcsmash.mintermc.api.block.Block;
 import net.mcsmash.mintermc.api.bot.BotOptions;
@@ -194,6 +195,7 @@ public class BedrockEditionBotSession extends BotSession {
             String host, int port, boolean netherNet, KeyPair keyPair, BedrockLoginHelper loginHelper) {
         this.session = bedrockSession;
         bedrockSession.setCodec(CODEC);
+        BedrockStaticDefinitions.install(bedrockSession.getPeer().getCodecHelper());
         if (loginHelper == null) {
             loginHelper = new BedrockLoginHelper(
                     bedrockSession,

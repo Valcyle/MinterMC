@@ -33,4 +33,11 @@ public class Location {
     public void setPitch(double pitch) {
         this.pitch = pitch;
     }
+
+    @Override
+    public String toString() {
+        return String.format(java.util.Locale.ROOT,
+                "Location{x=%.2f, y=%.2f, z=%.2f, yaw=%.2f, pitch=%.2f}",
+                position.getX(), position.getY(), position.getZ(), yaw, pitch);
+    }
 }

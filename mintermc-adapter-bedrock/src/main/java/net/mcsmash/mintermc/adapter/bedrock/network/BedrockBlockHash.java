@@ -1,12 +1,11 @@
 package net.mcsmash.mintermc.adapter.bedrock.network;
 
-import org.cloudburstmc.nbt.NbtMap;
-
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Computes the hashed Bedrock block network ID used when {@code StartGame}
@@ -32,7 +31,7 @@ final class BedrockBlockHash {
      * @param states the block state properties
      * @return the FNV-1a 32 hash, or {@code -2} for {@code minecraft:unknown}
      */
-    static int hash(String name, NbtMap states) {
+    static int hash(String name, Map<String, Object> states) {
         if ("minecraft:unknown".equals(name)) {
             return UNKNOWN_HASH;
         }

@@ -29,6 +29,7 @@ dependencies {
     }
     implementation("org.bitbucket.b_c:jose4j:0.9.6")
     implementation("com.nimbusds:nimbus-jose-jwt:10.8")
+    implementation("com.google.code.gson:gson:2.13.2")
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.10.2")

@@ -13,9 +13,12 @@ import org.cloudburstmc.protocol.bedrock.data.definitions.ItemDefinition;
 import org.cloudburstmc.protocol.bedrock.data.definitions.SimpleBlockDefinition;
 import org.cloudburstmc.protocol.bedrock.packet.BedrockPacket;
 import org.cloudburstmc.protocol.bedrock.packet.BedrockPacketHandler;
+import org.cloudburstmc.protocol.bedrock.packet.ChunkRadiusUpdatedPacket;
 import org.cloudburstmc.protocol.bedrock.packet.ClientCacheStatusPacket;
 import org.cloudburstmc.protocol.bedrock.packet.ClientToServerHandshakePacket;
 import org.cloudburstmc.protocol.bedrock.packet.DisconnectPacket;
+import org.cloudburstmc.protocol.bedrock.packet.LevelChunkPacket;
+import org.cloudburstmc.protocol.bedrock.packet.MovePlayerPacket;
 import org.cloudburstmc.protocol.bedrock.packet.NetworkSettingsPacket;
 import org.cloudburstmc.protocol.bedrock.packet.NetworkStackLatencyPacket;
 import org.cloudburstmc.protocol.bedrock.packet.PlayStatusPacket;
@@ -57,6 +60,9 @@ public class BedrockBotPacketHandler implements BedrockPacketHandler {
     private static final Logger logger = LoggerFactory.getLogger(BedrockBotPacketHandler.class);
 
     private static final int CHUNK_RADIUS = 8;
+
+    /** Number of level chunks received so far, used to confirm world streaming. */
+    private int receivedChunks;
 
     private final BedrockEditionBotSession bot;
     private final BedrockClientSession session;
@@ -177,10 +183,12 @@ public class BedrockBotPacketHandler implements BedrockPacketHandler {
 
         Vector3f position = packet.getPlayerPosition();
         if (position != null) {
+            // StartGame sends pitch first and yaw second, unlike MovePlayer which
+            // also carries a head rotation.
             bot.setLocation(new Location(
                     new Vector3(position.getX(), position.getY(), position.getZ()),
-                    packet.getRotation().getX(),
-                    packet.getRotation().getY()));
+                    packet.getRotation().getY(),
+                    packet.getRotation().getX()));
         }
 
         // Tell the server the local player is ready only after the spawn status
@@ -192,6 +200,44 @@ public class BedrockBotPacketHandler implements BedrockPacketHandler {
         }
 
         logger.info("Bedrock bot {} joined the world at {}", bot.getUsername(), bot.getLocation());
+        return PacketSignal.HANDLED;
+    }
+
+    /**
+     * Applies server-driven position corrections.
+     * <br>
+     * StartGame carries the level's spawn point, which can be a placeholder when
+     * its Y value is unset. The authoritative position for the player arrives in a
+     * MovePlayer packet after the world starts streaming, so it is applied here.
+     */
+    @Override
+    public PacketSignal handle(MovePlayerPacket packet) {
+        if (packet.getRuntimeEntityId() != bot.getRuntimeEntityId()
+                || packet.getMode() == MovePlayerPacket.Mode.HEAD_ROTATION) {
+            return PacketSignal.HANDLED;
+        }
+        Vector3f position = packet.getPosition();
+        Vector3f rotation = packet.getRotation();
+        // MovePlayer rotation is (pitch, yaw, head yaw).
+        bot.setLocation(new Location(
+                new Vector3(position.getX(), position.getY(), position.getZ()),
+                rotation.getY(), rotation.getX()));
+        logger.debug("Bedrock bot {} moved to {}", bot.getUsername(), bot.getLocation());
+        return PacketSignal.HANDLED;
+    }
+
+    @Override
+    public PacketSignal handle(ChunkRadiusUpdatedPacket packet) {
+        logger.debug("Bedrock server accepted chunk radius {}", packet.getRadius());
+        return PacketSignal.HANDLED;
+    }
+
+    @Override
+    public PacketSignal handle(LevelChunkPacket packet) {
+        if (receivedChunks++ == 0) {
+            logger.debug("Bedrock bot {} is receiving world chunks at ({}, {})",
+                    bot.getUsername(), packet.getChunkX(), packet.getChunkZ());
+        }
         return PacketSignal.HANDLED;
     }
 
