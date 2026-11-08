@@ -65,6 +65,16 @@ server.properties
 permissions.json
 allowlist.json
 
+# Local tooling
+local.properties
+*.local
+.run/
+.fleet/
+*.bak
+*.tmp
+*.swp
+*.swo
+
 # Dependencies
 node_modules/
 
