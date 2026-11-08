@@ -27,6 +27,10 @@ Use placeholders in documentation and examples:
 - Public documentation should contain facts, compatibility notes, reproducible steps, and legal/license facts. Do not include subjective recommendations, internal project history, or opinions about the project's quality.
 - Replace environment-specific test results with generic compatibility statements.
 
+## Keep operational documents local
+
+Operational audits, distribution checklists, legal review notes, and environment-specific runbooks belong in the local `.agents/` directory, which is ignored by git. They are not part of the public repository.
+
 ## Before committing
 
 1. Review the working tree:

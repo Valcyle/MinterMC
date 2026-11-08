@@ -85,6 +85,3 @@ This project is currently in early development. The gRPC server and plugin syste
 
 TBD
 
-Third-party dependency licenses and distribution obligations are tracked in
-[`docs/licensing.md`](docs/licensing.md).
-

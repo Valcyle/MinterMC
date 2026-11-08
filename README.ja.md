@@ -84,6 +84,3 @@ public class MyPlugin implements MinterPlugin {
 # License
 
 TBD
-
-サードパーティ依存のライセンスと配布時の義務は
-[`docs/licensing.md`](docs/licensing.md) にまとめています。
