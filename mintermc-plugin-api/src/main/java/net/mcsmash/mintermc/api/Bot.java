@@ -94,6 +94,19 @@ public interface Bot {
     Block getBlockAt(Vector3 position);
 
     /**
+     * Retrieves a block only when it is already cached.
+     * <br>
+     * Unlike {@link #getBlockAt(Vector3)} this never waits for the server, so it
+     * is safe to call from event handlers and pathfinding loops.
+     *
+     * @param position the position to get the block at
+     * @return the block, or {@code null} when the section is not loaded
+     */
+    default Block getLoadedBlockAt(Vector3 position) {
+        return null;
+    }
+
+    /**
      * Retrieves the location of the bot.
      * 
      * @return The location of the bot

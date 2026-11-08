@@ -87,6 +87,7 @@ public class BedrockEditionBotSession extends BotSession {
     private float lastZ;
     private volatile int dimension;
     private volatile MovementTarget movementTarget;
+    private double verticalVelocity;
 
     /** Upper bound for cached sub-chunks; each entry holds 4096 block ids. */
     private static final int MAX_CACHED_SECTIONS = 2048;
@@ -100,6 +101,8 @@ public class BedrockEditionBotSession extends BotSession {
             });
     /** Sub-chunk requests that are waiting for a server response. */
     private final Map<SectionKey, CompletableFuture<int[]>> pendingSections = new ConcurrentHashMap<>();
+    /** Sections the server could not provide, and the time they may be retried. */
+    private final Map<SectionKey, Long> sectionRetryAt = new ConcurrentHashMap<>();
 
     public BedrockEditionBotSession(String sessionToken) {
         super(sessionToken);
@@ -150,13 +153,34 @@ public class BedrockEditionBotSession extends BotSession {
             // Outside the vanilla overworld height limits.
             return null;
         }
+        Block loaded = getLoadedBlockAt(position);
+        if (loaded != null) {
+            return loaded;
+        }
+        SectionKey key = new SectionKey(blockX >> 4, blockY >> 4, blockZ >> 4);
+        if (loadSection(key) == null) {
+            return null;
+        }
+        return getLoadedBlockAt(position);
+    }
+
+    /**
+     * {@inheritDoc}
+     * <br>
+     * Returns {@code null} for sections that have not been received yet.
+     */
+    @Override
+    public Block getLoadedBlockAt(Vector3 position) {
+        int blockX = (int) Math.floor(position.getX());
+        int blockY = (int) Math.floor(position.getY());
+        int blockZ = (int) Math.floor(position.getZ());
+        if (blockY < -64 || blockY > 319) {
+            return null;
+        }
         SectionKey key = new SectionKey(blockX >> 4, blockY >> 4, blockZ >> 4);
         int[] section = sections.get(key);
         if (section == null) {
-            section = loadSection(key);
-            if (section == null) {
-                return null;
-            }
+            return null;
         }
         // Blocks are stored in XZY order.
         int index = ((blockX & 15) << 8) | ((blockZ & 15) << 4) | (blockY & 15);
@@ -215,11 +239,92 @@ public class BedrockEditionBotSession extends BotSession {
      * @param chunkZ   the chunk Z coordinate
      */
     public void rejectSection(int chunkX, int sectionY, int chunkZ) {
-        CompletableFuture<int[]> pending =
-                pendingSections.remove(new SectionKey(chunkX, sectionY, chunkZ));
+        SectionKey key = new SectionKey(chunkX, sectionY, chunkZ);
+        sectionRetryAt.put(key, System.nanoTime() + TimeUnit.SECONDS.toNanos(5));
+        CompletableFuture<int[]> pending = pendingSections.remove(key);
         if (pending != null) {
             pending.complete(null);
         }
+    }
+
+    /**
+     * Requests a section in the background when it is not cached yet.
+     * <br>
+     * Used to keep the ground below the bot available without blocking the
+     * network thread.
+     *
+     * @param key the section to load
+     */
+    public void prefetchSection(SectionKey key) {
+        if (sections.containsKey(key)) {
+            return;
+        }
+        Long retryAt = sectionRetryAt.get(key);
+        if (retryAt != null && retryAt > System.nanoTime()) {
+            return;
+        }
+        CompletableFuture<int[]> pending = new CompletableFuture<>();
+        if (pendingSections.putIfAbsent(key, pending) == null) {
+            requestSubChunk(key.x(), key.y(), key.z());
+        }
+    }
+
+    /**
+     * Prefetches the sections around the bot.
+     * <br>
+     * A 3x3 chunk area and four sections of height are kept available so that
+     * plugins can query nearby blocks without waiting for the server.
+     *
+     * @param x the bot X coordinate
+     * @param y the bot Y coordinate
+     * @param z the bot Z coordinate
+     */
+    private void prefetchAround(float x, float y, float z) {
+        int chunkX = (int) Math.floor(x) >> 4;
+        int chunkZ = (int) Math.floor(z) >> 4;
+        int sectionY = (int) Math.floor(y) >> 4;
+        for (int offsetX = -1; offsetX <= 1; offsetX++) {
+            for (int offsetZ = -1; offsetZ <= 1; offsetZ++) {
+                for (int offsetY = -2; offsetY <= 1; offsetY++) {
+                    int target = sectionY + offsetY;
+                    if (target < -4 || target > 19) {
+                        continue;
+                    }
+                    prefetchSection(new SectionKey(
+                            chunkX + offsetX, target, chunkZ + offsetZ));
+                }
+            }
+        }
+    }
+
+    /**
+     * Finds the ground height at a column using only cached blocks.
+     *
+     * @param x the X coordinate
+     * @param y the current Y coordinate
+     * @param z the Z coordinate
+     * @return the Y of the first walkable position, or {@code null} when the
+     *         surrounding sections are not cached
+     */
+    private Float groundHeightAt(float x, float y, float z) {
+        int blockX = (int) Math.floor(x);
+        int blockZ = (int) Math.floor(z);
+        int start = (int) Math.floor(y);
+        if (start < -63 || start > 319) {
+            return null;
+        }
+        int lowest = Math.max(-64, start - 40);
+        for (int probe = start; probe >= lowest; probe--) {
+            Block ground = getLoadedBlockAt(new Vector3(blockX, probe, blockZ));
+            Block above = getLoadedBlockAt(new Vector3(blockX, probe + 1, blockZ));
+            if (ground == null || above == null) {
+                return null;
+            }
+            if (!ground.isPassable() && above.isPassable()) {
+                return (float) (probe + 1);
+            }
+        }
+        return null;
     }
 
     /**
@@ -465,9 +570,29 @@ public class BedrockEditionBotSession extends BotSession {
                 // (-sin(yaw), *, cos(yaw)).
                 yaw = (float) Math.toDegrees(Math.atan2(-dirX, dirZ));
                 motion = Vector2f.from((float) dirX, (float) dirZ);
-                setLocation(new Location(new Vector3(x, y, z), yaw, pitch));
             }
         }
+
+        prefetchAround(x, y, z);
+        Float ground = groundHeightAt(x, y, z);
+        if (ground != null) {
+            if (y > ground + 0.001f) {
+                verticalVelocity = Math.max(verticalVelocity - 0.08, -3.92);
+                float next = (float) (y + verticalVelocity);
+                if (next <= ground) {
+                    next = ground;
+                    verticalVelocity = 0;
+                }
+                y = next;
+            } else if (y < ground - 0.001f) {
+                // The bot is inside the terrain; step up to the surface.
+                y = ground;
+                verticalVelocity = 0;
+            } else {
+                verticalVelocity = 0;
+            }
+        }
+        setLocation(new Location(new Vector3(x, y, z), yaw, pitch));
 
         double yawRadians = Math.toRadians(yaw);
         double pitchRadians = Math.toRadians(pitch);

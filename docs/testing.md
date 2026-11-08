@@ -212,9 +212,10 @@ Without `MINTER_MOVE_X`, `MINTER_MOVE_Y` and `MINTER_MOVE_Z`, the sample moves
 four blocks along X from the current position. `MoveTo` returns `reached=false`
 when the request times out or a new request replaces it.
 
-The current implementation moves in a straight line and keeps the Y coordinate.
-It does not avoid blocks or fall; combine it with block queries in a plugin for
-navigation.
+The current implementation moves in a straight line. When the sections around the
+bot are cached it also keeps the bot on the ground and lets it fall; without
+cached data it keeps the Y coordinate. It does not avoid blocks or jump yet;
+combine it with block queries in a plugin for navigation.
 
 ---
 

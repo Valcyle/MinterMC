@@ -102,6 +102,8 @@ One tick is 50 ms. Scheduled tasks stop automatically when the session ends.
 - Bot state such as `getLocation()` and `getHealth()` is safe to read.
 - `getBlockAt` may wait for the server to send a section, so avoid calling it
   in tight loops.
+- `getLoadedBlockAt` never waits and returns `null` when the section is not
+  cached yet. Prefer it for pathfinding and per-tick checks.
 
 ## Build and install
 
