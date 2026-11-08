@@ -87,3 +87,9 @@ This project is currently in early development. The gRPC server and plugin syste
 
 TBD
 
+# Third-party notices
+
+MinterMC depends on and bundles third-party components. Their licenses and
+attribution requirements are listed in
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+

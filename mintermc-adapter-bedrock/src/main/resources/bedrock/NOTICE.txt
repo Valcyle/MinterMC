@@ -1,4 +1,12 @@
-Block state and item data in this directory is generated from
-PrismarineJS/minecraft-data 3.119.0 (MIT), Bedrock 1.26.60.
+Block state and item data in this directory is generated from the
+minecraft-data package (PrismarineJS), version 3.119.0, Bedrock 1.26.60.
 
-Source: https://github.com/PrismarineJS/minecraft-data
+Source package: https://github.com/PrismarineJS/node-minecraft-data
+Data source:    https://github.com/PrismarineJS/minecraft-data
+
+The package declares the MIT license in its package metadata. Only block and
+item identifiers (names, state property names and values, numeric item ids) are
+included; no textures, models, sounds, language files, or world data are
+distributed with MinterMC.
+
+See THIRD_PARTY_NOTICES.md at the repository root for the full license text.

@@ -86,3 +86,8 @@ public class MyPlugin implements MinterPlugin {
 # License
 
 TBD
+
+# Third-party notices
+
+MinterMC はサードパーティ製のコンポーネントを利用・同梱しています。各ライセンスと
+ attribution の要件は [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) に記載しています。
