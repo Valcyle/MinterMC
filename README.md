@@ -1,4 +1,7 @@
 # MinterMC
+
+English | [日本語](README.ja.md)
+
 [![Discord](https://img.shields.io/discord/872775092218761226?logo=discord&color=7389D8)](https://discord.gg/ckQGXN46pu)
 [![Created at](https://img.shields.io/github/created-at/Valcyle/MinterMC)](https://github.com/Valcyle/MinterMC)
 [![Last commit](https://img.shields.io/github/last-commit/Valcyle/MinterMC
@@ -15,7 +18,8 @@ Exposes a single **gRPC API** so bots can be controlled from any programming lan
 # DEMO
 [<img src="https://img.youtube.com/vi/8_sQTFVja0g/0.jpg" alt="1500 bots joining using MinterMC" width="200">](https://www.youtube.com/watch?v=8_sQTFVja0g)
 
-Currently joining java edition servers is supported.
+Currently, joining Java Edition and Bedrock Edition offline servers is supported.
+Bedrock support is under active development.
 Python, C++, JavaScript and Java examples are available.
 Check out [`examples`](examples/) folder for more examples.
 
@@ -67,7 +71,7 @@ public class MyPlugin implements MinterPlugin {
 
 # Note
 
-This project is currently in early development. The gRPC server and plugin system are work in progress, but the Minecraft protocol adapters (Java Edition / Bedrock Edition) are not yet implemented.
+This project is currently in early development. The gRPC server and plugin system are work in progress. The Java Edition and Bedrock Edition adapters are functional; Bedrock block/item registries and world interaction are still being implemented.
 
 > [!NOTE] 
 > MinterMC uses [MCProtocolLib](https://github.com/GeyserMC/MCProtocolLib) for Java Edition adapter implementation.

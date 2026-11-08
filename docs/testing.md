@@ -1,29 +1,29 @@
-# 接続テスト手順
+# Connection Testing Guide
 
-MinterMC に実際のサーバーへ接続させる手順です。2026-11-07 時点で確認できた結果も併記します。
+This guide explains how to connect MinterMC to a real server. It also records the results verified on 2026-11-07.
 
 ---
 
-## 1. MinterMC サーバーを起動する
+## 1. Start the MinterMC server
 
 ```powershell
 cd C:\path\to\MinterMC
 .\gradlew :mintermc-server:run
 ```
 
-`MinterMC gRPC Server started, listening on 50051` と出れば起動成功です。
+The server started successfully when you see `MinterMC gRPC Server started, listening on 50051`.
 
-### バージョン・transport の上書き
+### Overriding the version and transport
 
-環境変数で切り替えられます（再ビルド不要）。
+The adapter can be switched with environment variables; no rebuild is required.
 
-| 環境変数 | 既定値 | 用途 |
+| Variable | Default | Purpose |
 |---|---|---|
-| `MINTER_JAVA_VERSION` | `1.21.4` | Java Edition のプロトコルバージョン |
-| `MINTER_BEDROCK_VERSION` | `1.26.60` | Bedrock のプロトコルバージョン（2225） |
+| `MINTER_JAVA_VERSION` | `1.21.4` | Java Edition protocol version |
+| `MINTER_BEDROCK_VERSION` | `1.26.60` | Bedrock protocol version (2225) |
 | `MINTER_BEDROCK_TRANSPORT` | `nethernet` | `nethernet` / `nethernet-lan` / `raknet` |
 
-例:
+Example:
 
 ```powershell
 $env:MINTER_BEDROCK_TRANSPORT = "raknet"
@@ -32,9 +32,9 @@ $env:MINTER_BEDROCK_TRANSPORT = "raknet"
 
 ---
 
-## 2. サンプルクライアントを実行する
+## 2. Run the sample client
 
-別のターミナルで。
+Use a second terminal.
 
 ### Bedrock Edition
 
@@ -54,14 +54,14 @@ $env:MINTER_BOT_NAME    = "MinterProbe"
 .\.venv\Scripts\python.exe examples\python\join_je.py
 ```
 
-Python の依存関係が未導入なら:
+If the Python dependencies are not installed yet:
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install grpcio grpcio-tools
 ```
 
-gRPC スタブは `examples/python/` に生成済みです。再生成する場合:
+The gRPC stubs are already generated in `examples/python/`. To regenerate them:
 
 ```powershell
 cd examples\python
@@ -73,11 +73,11 @@ cd examples\python
 
 ---
 
-## 3. 成功の見え方
+## 3. What success looks like
 
-### MinterMC サーバーログ
+### MinterMC server log
 
-Bedrock の場合は次の順に出ます。
+For Bedrock, the log normally shows the following sequence:
 
 ```
 Bedrock RakNet connection established to 127.0.0.1:19228, waiting for network settings
@@ -87,26 +87,26 @@ Bedrock bot MinterProbe joined the world at ...
 Bedrock bot MinterProbe spawned
 ```
 
-Java の場合は `Login SUCCESS!` と座標が返ります。
+For Java, the client prints `Login SUCCESS!` and the current position.
 
-### Python クライアント
+### Python client
 
-`position` が `(0.00, 0.00, 0.00)` のままなら未参加、ワールド座標（例: `(0.50, 65.00, 0.50)`）に変われば参加成功です。
+If `position` stays at `(0.00, 0.00, 0.00)`, the bot has not joined yet. World coordinates such as `(0.50, 65.00, 0.50)` mean the bot has joined successfully.
 
 ---
 
-## 4. サーバー別の確認結果（2026-11-07）
+## 4. Verified results by server (2026-11-07)
 
-| サーバー | transport | 結果 |
+| Server | Transport | Result |
 |---|---|---|
-| Nukkit-MOT 1.26.60（RakNet、`127.0.0.1:19228`） | `raknet` | **参加・spawn 成功** |
-| 公式 BDS 1.26.61.1（NetherNet、`127.0.0.1:19132`） | `nethernet` | **参加・spawn 成功** |
-| 公式 BDS 1.26.61.1（RakNet 互換） | `raknet` | `PacketViolationWarningPacket` で切断（NetherNet を使ってください） |
-| Java Edition サーバー | - | 未検証（`join_je.py` で確認可能） |
+| Nukkit-MOT 1.26.60 (RakNet, `127.0.0.1:19228`) | `raknet` | **Joined and spawned** |
+| Official BDS 1.26.61.1 (NetherNet, `127.0.0.1:19132`) | `nethernet` | **Joined and spawned** |
+| Official BDS 1.26.61.1 (RakNet compatibility) | `raknet` | Disconnected with `PacketViolationWarningPacket`; use NetherNet |
+| Java Edition server | - | Not verified yet; use `join_je.py` to test |
 
-### Nukkit-MOT で試す場合
+### Testing with Nukkit-MOT
 
-`mcsmash-dev` の Nukkit は RakNet で待ち受けています。
+The Nukkit servers under `mcsmash-dev` listen on RakNet.
 
 ```powershell
 $env:MINTER_BEDROCK_TRANSPORT = "raknet"
@@ -120,11 +120,11 @@ $env:MINTER_BOT_NAME    = "MinterProbe"
 .\.venv\Scripts\python.exe examples\python\join_be.py
 ```
 
-`nukkit`（サバイバル）は `19226`、`skyblock` は `19228` です。`xbox-auth=off` のサーバーを使ってください。
+The survival `nukkit` server uses `19226`; `skyblock` uses `19228`. Use a server with `xbox-auth=off`.
 
-### 公式 BDS で試す場合
+### Testing with the official BDS
 
-公式 BDS は `online-mode=false` と `transport=nethernet` が必要です。テスト用 BDS を使う場合は、設定を変更したあと必ず元に戻してください。
+The official BDS requires `online-mode=false` and `transport=nethernet`. If you use a test BDS, restore its configuration after testing.
 
 ```properties
 online-mode=false
@@ -133,7 +133,7 @@ server-port=19132
 transport=nethernet
 ```
 
-起動後、MinterMC 側は既定の `nethernet` で接続します。
+After the server starts, MinterMC connects with the default `nethernet` transport.
 
 ```powershell
 $env:MINTER_TARGET_HOST = "127.0.0.1"
@@ -142,7 +142,7 @@ $env:MINTER_BOT_NAME    = "MinterProbe"
 .\.venv\Scripts\python.exe examples\python\join_be.py
 ```
 
-成功すると MinterMC 側に次のログが出ます。
+On success, the MinterMC log shows:
 
 ```
 Bedrock login accepted for MinterProbe
@@ -151,18 +151,18 @@ Bedrock bot MinterProbe spawned
 ```
 
 > [!NOTE]
-> BDS は `DeviceOS=7`（Windows）のログインを `readNoHeader` で拒否します。MinterMC は retail クライアントと同じ `DeviceOS=12`（Switch/NX）を送ります。NetherNet の identity token と Login の `Token` は同じマルチプレイヤートークンを共有しています。
+> BDS rejects `DeviceOS=7` (Windows) with `readNoHeader`. MinterMC sends `DeviceOS=12` (Switch/NX), matching retail clients. The NetherNet identity and the login `Token` share the same multiplayer token.
 
 ---
 
-## 5. 非致命的なデコードエラー
+## 5. Non-fatal decode errors
 
-Nukkit 接続時、`CraftingDataPacket` / `ItemComponentPacket` / `CreativeContentPacket` のデコードで Cloudburst が例外を出すことがあります。これはアイテム定義レジストリが未設定なためで、**接続・spawn 自体は継続**します。ログに `joined the world` と `spawned` が出ていれば成功です。
+When connecting to Nukkit, Cloudburst may log exceptions while decoding `CraftingDataPacket`, `ItemComponentPacket`, or `CreativeContentPacket`. These occur because the item definition registry is not populated yet, but **the connection and spawn continue**. If the log contains `joined the world` and `spawned`, the test succeeded.
 
 ---
 
-## 6. 後片付け
+## 6. Cleanup
 
-- `gradlew :mintermc-server:run` は `Ctrl+C` で停止
-- テスト用 BDS を起動した場合はプロセスを停止し、`server.properties` を元に戻す
-- ユーザーのロビー BDS や Waterdog には触れない
+- Stop `gradlew :mintermc-server:run` with `Ctrl+C`.
+- If you started a test BDS, stop the process and restore `server.properties`.
+- Do not touch the user's lobby BDS or Waterdog instance.
