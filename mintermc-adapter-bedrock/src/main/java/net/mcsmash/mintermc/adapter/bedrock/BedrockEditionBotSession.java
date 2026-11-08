@@ -87,7 +87,7 @@ public class BedrockEditionBotSession extends BotSession {
     private float lastZ;
     private volatile int dimension;
     private volatile MovementTarget movementTarget;
-    private double verticalVelocity;
+    private volatile boolean onGround;
 
     /** Upper bound for cached sub-chunks; each entry holds 4096 block ids. */
     private static final int MAX_CACHED_SECTIONS = 2048;
@@ -298,42 +298,21 @@ public class BedrockEditionBotSession extends BotSession {
     }
 
     /**
-     * Finds the ground height at a column using only cached blocks.
-     *
-     * @param x the X coordinate
-     * @param y the current Y coordinate
-     * @param z the Z coordinate
-     * @return the Y of the first walkable position, or {@code null} when the
-     *         surrounding sections are not cached
-     */
-    private Float groundHeightAt(float x, float y, float z) {
-        int blockX = (int) Math.floor(x);
-        int blockZ = (int) Math.floor(z);
-        int start = (int) Math.floor(y);
-        if (start < -63 || start > 319) {
-            return null;
-        }
-        int lowest = Math.max(-64, start - 40);
-        for (int probe = start; probe >= lowest; probe--) {
-            Block ground = getLoadedBlockAt(new Vector3(blockX, probe, blockZ));
-            Block above = getLoadedBlockAt(new Vector3(blockX, probe + 1, blockZ));
-            if (ground == null || above == null) {
-                return null;
-            }
-            if (!ground.isPassable() && above.isPassable()) {
-                return (float) (probe + 1);
-            }
-        }
-        return null;
-    }
-
-    /**
      * Sets the dimension reported by {@code StartGame}.
      *
      * @param dimension the Bedrock dimension id
      */
     public void setDimension(int dimension) {
         this.dimension = dimension;
+    }
+
+    /**
+     * Records whether the server reports the bot as standing on a block.
+     *
+     * @param onGround the ground state from a movement correction
+     */
+    public void setOnGround(boolean onGround) {
+        this.onGround = onGround;
     }
 
     @Override
@@ -569,29 +548,12 @@ public class BedrockEditionBotSession extends BotSession {
                 // Bedrock yaw 0 faces +Z; the camera forward vector is
                 // (-sin(yaw), *, cos(yaw)).
                 yaw = (float) Math.toDegrees(Math.atan2(-dirX, dirZ));
-                motion = Vector2f.from((float) dirX, (float) dirZ);
+                // The move vector is a local input: X is strafe, Y is forward.
+                motion = Vector2f.from(0f, 1f);
             }
         }
 
         prefetchAround(x, y, z);
-        Float ground = groundHeightAt(x, y, z);
-        if (ground != null) {
-            if (y > ground + 0.001f) {
-                verticalVelocity = Math.max(verticalVelocity - 0.08, -3.92);
-                float next = (float) (y + verticalVelocity);
-                if (next <= ground) {
-                    next = ground;
-                    verticalVelocity = 0;
-                }
-                y = next;
-            } else if (y < ground - 0.001f) {
-                // The bot is inside the terrain; step up to the surface.
-                y = ground;
-                verticalVelocity = 0;
-            } else {
-                verticalVelocity = 0;
-            }
-        }
         setLocation(new Location(new Vector3(x, y, z), yaw, pitch));
 
         double yawRadians = Math.toRadians(yaw);
@@ -601,7 +563,10 @@ public class BedrockEditionBotSession extends BotSession {
         packet.setRotation(Vector3f.from(pitch, yaw, yaw));
         packet.setPosition(Vector3f.from(x, y, z));
         packet.setMotion(motion);
-        packet.getInputData().add(PlayerAuthInputData.RECEIVED_SERVER_DATA);
+        packet.getInputData().add(PlayerAuthInputData.BLOCK_BREAKING_DELAY_ENABLED);
+        if (onGround) {
+            packet.getInputData().add(PlayerAuthInputData.VERTICAL_COLLISION);
+        }
         if (target != null && movementTarget != null) {
             packet.getInputData().add(PlayerAuthInputData.UP);
         }

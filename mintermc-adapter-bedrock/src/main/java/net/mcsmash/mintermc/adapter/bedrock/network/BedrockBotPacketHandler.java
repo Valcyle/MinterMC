@@ -12,6 +12,7 @@ import org.cloudburstmc.protocol.bedrock.BedrockClientSession;
 import org.cloudburstmc.protocol.bedrock.codec.BedrockCodecHelper;
 import org.cloudburstmc.protocol.bedrock.data.SubChunkData;
 import org.cloudburstmc.protocol.bedrock.data.SubChunkRequestResult;
+import org.cloudburstmc.protocol.bedrock.data.ServerboundLoadingScreenPacketType;
 import org.cloudburstmc.protocol.bedrock.data.definitions.BlockDefinition;
 import org.cloudburstmc.protocol.bedrock.data.definitions.ItemDefinition;
 import org.cloudburstmc.protocol.bedrock.data.definitions.SimpleBlockDefinition;
@@ -22,6 +23,7 @@ import org.cloudburstmc.protocol.bedrock.packet.ClientCacheStatusPacket;
 import org.cloudburstmc.protocol.bedrock.packet.ClientToServerHandshakePacket;
 import org.cloudburstmc.protocol.bedrock.packet.CorrectPlayerMovePredictionPacket;
 import org.cloudburstmc.protocol.bedrock.packet.DisconnectPacket;
+import org.cloudburstmc.protocol.bedrock.packet.InteractPacket;
 import org.cloudburstmc.protocol.bedrock.packet.LevelChunkPacket;
 import org.cloudburstmc.protocol.bedrock.packet.MovePlayerPacket;
 import org.cloudburstmc.protocol.bedrock.packet.NetworkSettingsPacket;
@@ -33,6 +35,7 @@ import org.cloudburstmc.protocol.bedrock.packet.ResourcePackClientResponsePacket
 import org.cloudburstmc.protocol.bedrock.packet.ResourcePackStackPacket;
 import org.cloudburstmc.protocol.bedrock.packet.ResourcePacksInfoPacket;
 import org.cloudburstmc.protocol.bedrock.packet.ServerToClientHandshakePacket;
+import org.cloudburstmc.protocol.bedrock.packet.ServerboundLoadingScreenPacket;
 import org.cloudburstmc.protocol.bedrock.packet.SetHealthPacket;
 import org.cloudburstmc.protocol.bedrock.packet.SetLocalPlayerAsInitializedPacket;
 import org.cloudburstmc.protocol.bedrock.packet.StartGamePacket;
@@ -142,7 +145,7 @@ public class BedrockBotPacketHandler implements BedrockPacketHandler {
             }
             case PLAYER_SPAWN -> {
                 bot.setSpawned(true);
-                sendLocalPlayerInitialized();
+                completeSpawn();
                 bot.startAuthInputLoop();
                 bot.notifySpawn();
                 logger.info("Bedrock bot {} spawned", bot.getUsername());
@@ -205,7 +208,7 @@ public class BedrockBotPacketHandler implements BedrockPacketHandler {
         // If a rare spawn-before-start-game race happens, the spawn handler
         // already set the flag and we initialize here instead.
         if (bot.isSpawned()) {
-            sendLocalPlayerInitialized();
+            completeSpawn();
             bot.startAuthInputLoop();
         }
 
@@ -251,6 +254,7 @@ public class BedrockBotPacketHandler implements BedrockPacketHandler {
         }
         Location current = bot.getLocation();
         Vector3 currentPosition = current.getPosition();
+        bot.setOnGround(packet.isOnGround());
         boolean changed = Math.abs(position.getX() - currentPosition.getX()) > 0.001
                 || Math.abs(position.getY() - currentPosition.getY()) > 0.001
                 || Math.abs(position.getZ() - currentPosition.getZ()) > 0.001;
@@ -264,7 +268,8 @@ public class BedrockBotPacketHandler implements BedrockPacketHandler {
     }
 
     @Override
-    public PacketSignal handle(ChunkRadiusUpdatedPacket packet) {        logger.debug("Bedrock server accepted chunk radius {}", packet.getRadius());
+    public PacketSignal handle(ChunkRadiusUpdatedPacket packet) {
+        logger.debug("Bedrock server accepted chunk radius {}", packet.getRadius());
         return PacketSignal.HANDLED;
     }
 
@@ -344,12 +349,26 @@ public class BedrockBotPacketHandler implements BedrockPacketHandler {
     }
 
     /**
-     * Sends the packet that lets the server finish placing the player in the world.
+     * Finishes the spawn sequence the same way the retail client does.
+     * <br>
+     * BDS keeps the player in the loading state until it receives the entity
+     * interaction update, the end of the loading screen, and the initialized
+     * notification. Without the first two packets the player is visible but
+     * movement is ignored.
      */
-    private void sendLocalPlayerInitialized() {
+    private void completeSpawn() {
         if (bot.getRuntimeEntityId() == 0) {
             return;
         }
+        InteractPacket interact = new InteractPacket();
+        interact.setAction(InteractPacket.Action.MOUSEOVER);
+        interact.setRuntimeEntityId(0L);
+        session.sendPacketImmediately(interact);
+
+        ServerboundLoadingScreenPacket loading = new ServerboundLoadingScreenPacket();
+        loading.setType(ServerboundLoadingScreenPacketType.END_LOADING_SCREEN);
+        session.sendPacketImmediately(loading);
+
         SetLocalPlayerAsInitializedPacket initialized = new SetLocalPlayerAsInitializedPacket();
         initialized.setRuntimeEntityId(bot.getRuntimeEntityId());
         session.sendPacketImmediately(initialized);
