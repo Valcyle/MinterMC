@@ -51,6 +51,23 @@ __pycache__/
 *.pyc
 .venv/
 
+# Secrets and local server configuration
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+captured/
+server.properties
+permissions.json
+allowlist.json
+
+# Dependencies
+node_modules/
+
 #test
 examples/js/node_modules
 # NetherNet sidecar

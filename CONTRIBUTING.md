@@ -1,8 +1,8 @@
 # Contributing to MinterMC
 
-First of all, thank you for considering contributing to **MinterMC**! It is people like you who will make this the gold standard for Minecraft bot infrastructure.
+Thank you for contributing to **MinterMC**.
 
-As a project leveraging **Java 25 (LTS)** and **gRPC**, we maintain high standards for performance, scalability, and code cleanliness.
+The project targets **Java 25 (LTS)** and **gRPC**. Contributions should preserve performance, scalability, and code clarity.
 
 ---
 
@@ -10,8 +10,8 @@ As a project leveraging **Java 25 (LTS)** and **gRPC**, we maintain high standar
 
 Before you start, ensure you have the following installed:
 
-* **JDK 25:** This is non-negotiable. We use the latest LTS features like Virtual Threads and Pattern Matching.
-* **Gradle:** We use the Kotlin DSL.
+* **JDK 25:** Required. The project uses virtual threads and modern language features.
+* **Gradle:** The build uses the Kotlin DSL.
 * **Protobuf Compiler (protoc):** Required if you are modifying gRPC definitions.
 * **Git:** For version control.
 
@@ -42,13 +42,13 @@ Verify that the infrastructure is working on your machine:
 
 ## Coding Standards
 
-To keep the codebase Modern Java and professional, please follow these guidelines:
+To keep the codebase consistent, follow these guidelines:
 
-* **Embrace Java 25:** Use records, sealed classes, and switch pattern matching where appropriate.
-* **Concurrency:** Use **Virtual Threads** (Thread.ofVirtual()) instead of traditional thread pools for bot sessions.
-* **Naming:** Follow standard Java naming conventions. Use descriptive names for gRPC messages in .proto files.
-* **Documentation:** All public APIs in mintermc-core and mintermc-server should have Javadoc.
-* **Code Style:** Please follow the existing code style and conventions.
+* **Java 25:** Use records, sealed classes, and switch pattern matching where appropriate.
+* **Concurrency:** Use **virtual threads** (`Thread.ofVirtual()`) instead of traditional thread pools for bot sessions.
+* **Naming:** Follow standard Java naming conventions. Use descriptive names for gRPC messages in `.proto` files.
+* **Documentation:** All public APIs in `mintermc-core` and `mintermc-server` should have Javadoc.
+* **Code Style:** Follow the existing code style and conventions.
 
 ---
 
@@ -61,13 +61,13 @@ If you modify files in mintermc-protocol/src/main/proto:
 ```bash
 ./gradlew generateProto
 ```
-3. Note that protocol changes affect all downstream SDKs (Python, JS, Rust). Document these changes clearly in your PR.(If you don't know what this means, don't worry about it)
+3. Protocol changes affect downstream SDKs (Python, JS, Rust). Document them in the PR.
 
 ---
 
 ## Testing
 
-We value stability.
+Stability is important for the project.
 
 * If you can, write **JUnit 5** tests for new features.
 * If you add a new packet handler, include a test case in the respective adapter module.
@@ -75,6 +75,12 @@ We value stability.
 ```bash
 ./gradlew test
 ```
+
+---
+
+## Repository hygiene
+
+Read [AGENTS.md](AGENTS.md) before committing. Do not commit personal or environment-specific information such as absolute local paths, usernames, hostnames, LAN IPs, XUIDs, tokens, or captured login artifacts. Use placeholders in examples.
 
 ---
 
@@ -102,13 +108,12 @@ We value stability.
 
 This project, **MinterMC**, is an independent third-party tool and is not affiliated with, endorsed by, or integrated with Mojang AB or Microsoft Corporation. Minecraft is a trademark of Mojang AB.
 
-**EULA Compliance**
+**EULA and server rules**
 
-MinterMC is developed in accordance with the [Minecraft End User License Agreement](https://www.minecraft.net/en-us/eula) and the [Brand and Asset Guidelines](https://www.minecraft.net/en-us/usage-guidelines).
+Users are responsible for complying with the [Minecraft End User License Agreement](https://www.minecraft.net/en-us/eula), the [Brand and Asset Guidelines](https://www.minecraft.net/en-us/usage-guidelines), and the terms of service of any server they connect to.
 
-* This tool is a "Service" and "Tool" as defined in the EULA.
-* It does not distribute any official Minecraft binaries or assets.
-* It is intended for educational, research, and development purposes.
+* The repository does not include official Minecraft binaries or assets.
+* The project is intended for development, research, and testing.
 
 **Limitation of Liability**
 
