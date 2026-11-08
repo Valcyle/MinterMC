@@ -20,6 +20,7 @@ import org.cloudburstmc.protocol.bedrock.packet.BedrockPacketHandler;
 import org.cloudburstmc.protocol.bedrock.packet.ChunkRadiusUpdatedPacket;
 import org.cloudburstmc.protocol.bedrock.packet.ClientCacheStatusPacket;
 import org.cloudburstmc.protocol.bedrock.packet.ClientToServerHandshakePacket;
+import org.cloudburstmc.protocol.bedrock.packet.CorrectPlayerMovePredictionPacket;
 import org.cloudburstmc.protocol.bedrock.packet.DisconnectPacket;
 import org.cloudburstmc.protocol.bedrock.packet.LevelChunkPacket;
 import org.cloudburstmc.protocol.bedrock.packet.MovePlayerPacket;
@@ -235,9 +236,35 @@ public class BedrockBotPacketHandler implements BedrockPacketHandler {
         return PacketSignal.HANDLED;
     }
 
+    /**
+     * Applies the server's authoritative position.
+     * <br>
+     * With server-authoritative movement, BDS corrects drift with this packet
+     * rather than {@code MovePlayer}. Without it the bot keeps the spawn
+     * position it was given and never reports the real one.
+     */
     @Override
-    public PacketSignal handle(ChunkRadiusUpdatedPacket packet) {
-        logger.debug("Bedrock server accepted chunk radius {}", packet.getRadius());
+    public PacketSignal handle(CorrectPlayerMovePredictionPacket packet) {
+        Vector3f position = packet.getPosition();
+        if (position == null) {
+            return PacketSignal.HANDLED;
+        }
+        Location current = bot.getLocation();
+        Vector3 currentPosition = current.getPosition();
+        boolean changed = Math.abs(position.getX() - currentPosition.getX()) > 0.001
+                || Math.abs(position.getY() - currentPosition.getY()) > 0.001
+                || Math.abs(position.getZ() - currentPosition.getZ()) > 0.001;
+        if (changed) {
+            bot.setLocation(new Location(
+                    new Vector3(position.getX(), position.getY(), position.getZ()),
+                    current.getYaw(), current.getPitch()));
+            logger.debug("Bedrock bot {} corrected to {}", bot.getUsername(), bot.getLocation());
+        }
+        return PacketSignal.HANDLED;
+    }
+
+    @Override
+    public PacketSignal handle(ChunkRadiusUpdatedPacket packet) {        logger.debug("Bedrock server accepted chunk radius {}", packet.getRadius());
         return PacketSignal.HANDLED;
     }
 
