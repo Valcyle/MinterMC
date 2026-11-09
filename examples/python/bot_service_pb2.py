@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11\x62ot_service.proto\"b\n\x0cLoginRequest\x12\x10\n\x08\x62ot_name\x18\x01 \x01(\t\x12$\n\x0etarget_edition\x18\x02 \x01(\x0e\x32\x0c.EditionType\x12\x0c\n\x04host\x18\x03 \x01(\t\x12\x0c\n\x04port\x18\x04 \x01(\x05\"K\n\rLoginResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x15\n\rerror_message\x18\x02 \x01(\t\x12\x12\n\nsession_id\x18\x03 \x01(\t\"#\n\rStatusRequest\x12\x12\n\nsession_id\x18\x01 \x01(\t\"k\n\x0eStatusResponse\x12\t\n\x01x\x18\x01 \x01(\x01\x12\t\n\x01y\x18\x02 \x01(\x01\x12\t\n\x01z\x18\x03 \x01(\x01\x12\x0b\n\x03yaw\x18\x04 \x01(\x02\x12\r\n\x05pitch\x18\x05 \x01(\x02\x12\x0e\n\x06health\x18\x06 \x01(\x02\x12\x0c\n\x04\x66ood\x18\x07 \x01(\x05\"W\n\x0bMoveRequest\x12\x12\n\nsession_id\x18\x01 \x01(\t\x12\x10\n\x08target_x\x18\x02 \x01(\x01\x12\x10\n\x08target_y\x18\x03 \x01(\x01\x12\x10\n\x08target_z\x18\x04 \x01(\x01\"\x1f\n\x0cMoveResponse\x12\x0f\n\x07reached\x18\x01 \x01(\x08\"K\n\rClientCommand\x12\x12\n\nsession_id\x18\x01 \x01(\t\x12\x16\n\x0c\x63hat_message\x18\x02 \x01(\tH\x00\x42\x0e\n\x0c\x63ommand_type\"j\n\x0bServerEvent\x12%\n\rchat_received\x18\x01 \x01(\x0b\x32\x0c.ChatMessageH\x00\x12&\n\rblock_updated\x18\x02 \x01(\x0b\x32\r.BlockUpdatedH\x00\x42\x0c\n\nevent_type\"A\n\x0b\x43hatMessage\x12\x0e\n\x06sender\x18\x01 \x01(\t\x12\x0f\n\x07\x63ontent\x18\x02 \x01(\t\x12\x11\n\ttimestamp\x18\x03 \x01(\x03\"E\n\x0c\x42lockUpdated\x12\t\n\x01x\x18\x01 \x01(\x05\x12\t\n\x01y\x18\x02 \x01(\x05\x12\t\n\x01z\x18\x03 \x01(\x05\x12\x14\n\x0cnew_material\x18\x04 \x01(\t*4\n\x0b\x45\x64itionType\x12\x10\n\x0cJAVA_EDITION\x10\x00\x12\x13\n\x0f\x42\x45\x44ROCK_EDITION\x10\x01\x32\xc0\x01\n\x10MinterBotService\x12&\n\x05Login\x12\r.LoginRequest\x1a\x0e.LoginResponse\x12,\n\tGetStatus\x12\x0e.StatusRequest\x1a\x0f.StatusResponse\x12%\n\x06MoveTo\x12\x0c.MoveRequest\x1a\r.MoveResponse\x12/\n\x0b\x45ventStream\x12\x0e.ClientCommand\x1a\x0c.ServerEvent(\x01\x30\x01\x42\x32\n\x1dnet.mcsmash.mintermc.protocolB\x0f\x42otServiceProtoP\x01\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11\x62ot_service.proto\"\x91\x01\n\x0cLoginRequest\x12\x10\n\x08\x62ot_name\x18\x01 \x01(\t\x12$\n\x0etarget_edition\x18\x02 \x01(\x0e\x32\x0c.EditionType\x12\x0c\n\x04host\x18\x03 \x01(\t\x12\x0c\n\x04port\x18\x04 \x01(\x05\x12\x1c\n\tauth_mode\x18\x05 \x01(\x0e\x32\t.AuthMode\x12\x0f\n\x07\x61\x63\x63ount\x18\x06 \x01(\t\"K\n\rLoginResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x15\n\rerror_message\x18\x02 \x01(\t\x12\x12\n\nsession_id\x18\x03 \x01(\t\"#\n\rStatusRequest\x12\x12\n\nsession_id\x18\x01 \x01(\t\"k\n\x0eStatusResponse\x12\t\n\x01x\x18\x01 \x01(\x01\x12\t\n\x01y\x18\x02 \x01(\x01\x12\t\n\x01z\x18\x03 \x01(\x01\x12\x0b\n\x03yaw\x18\x04 \x01(\x02\x12\r\n\x05pitch\x18\x05 \x01(\x02\x12\x0e\n\x06health\x18\x06 \x01(\x02\x12\x0c\n\x04\x66ood\x18\x07 \x01(\x05\"W\n\x0bMoveRequest\x12\x12\n\nsession_id\x18\x01 \x01(\t\x12\x10\n\x08target_x\x18\x02 \x01(\x01\x12\x10\n\x08target_y\x18\x03 \x01(\x01\x12\x10\n\x08target_z\x18\x04 \x01(\x01\"\x1f\n\x0cMoveResponse\x12\x0f\n\x07reached\x18\x01 \x01(\x08\"C\n\x0c\x42lockRequest\x12\x12\n\nsession_id\x18\x01 \x01(\t\x12\t\n\x01x\x18\x02 \x01(\x05\x12\t\n\x01y\x18\x03 \x01(\x05\x12\t\n\x01z\x18\x04 \x01(\x05\"B\n\rBlockResponse\x12\r\n\x05\x66ound\x18\x01 \x01(\x08\x12\x10\n\x08material\x18\x02 \x01(\t\x12\x10\n\x08passable\x18\x03 \x01(\x08\"K\n\rClientCommand\x12\x12\n\nsession_id\x18\x01 \x01(\t\x12\x16\n\x0c\x63hat_message\x18\x02 \x01(\tH\x00\x42\x0e\n\x0c\x63ommand_type\"j\n\x0bServerEvent\x12%\n\rchat_received\x18\x01 \x01(\x0b\x32\x0c.ChatMessageH\x00\x12&\n\rblock_updated\x18\x02 \x01(\x0b\x32\r.BlockUpdatedH\x00\x42\x0c\n\nevent_type\"A\n\x0b\x43hatMessage\x12\x0e\n\x06sender\x18\x01 \x01(\t\x12\x0f\n\x07\x63ontent\x18\x02 \x01(\t\x12\x11\n\ttimestamp\x18\x03 \x01(\x03\"E\n\x0c\x42lockUpdated\x12\t\n\x01x\x18\x01 \x01(\x05\x12\t\n\x01y\x18\x02 \x01(\x05\x12\t\n\x01z\x18\x03 \x01(\x05\x12\x14\n\x0cnew_material\x18\x04 \x01(\t*4\n\x0b\x45\x64itionType\x12\x10\n\x0cJAVA_EDITION\x10\x00\x12\x13\n\x0f\x42\x45\x44ROCK_EDITION\x10\x01*0\n\x08\x41uthMode\x12\x10\n\x0c\x41UTH_OFFLINE\x10\x00\x12\x12\n\x0e\x41UTH_MICROSOFT\x10\x01\x32\xeb\x01\n\x10MinterBotService\x12&\n\x05Login\x12\r.LoginRequest\x1a\x0e.LoginResponse\x12,\n\tGetStatus\x12\x0e.StatusRequest\x1a\x0f.StatusResponse\x12%\n\x06MoveTo\x12\x0c.MoveRequest\x1a\r.MoveResponse\x12)\n\x08GetBlock\x12\r.BlockRequest\x1a\x0e.BlockResponse\x12/\n\x0b\x45ventStream\x12\x0e.ClientCommand\x1a\x0c.ServerEvent(\x01\x30\x01\x42\x32\n\x1dnet.mcsmash.mintermc.protocolB\x0f\x42otServiceProtoP\x01\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,28 +32,34 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'bot_service_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'\n\035net.mcsmash.mintermc.protocolB\017BotServiceProtoP\001'
-  _globals['_EDITIONTYPE']._serialized_start=789
-  _globals['_EDITIONTYPE']._serialized_end=841
-  _globals['_LOGINREQUEST']._serialized_start=21
-  _globals['_LOGINREQUEST']._serialized_end=119
-  _globals['_LOGINRESPONSE']._serialized_start=121
-  _globals['_LOGINRESPONSE']._serialized_end=196
-  _globals['_STATUSREQUEST']._serialized_start=198
-  _globals['_STATUSREQUEST']._serialized_end=233
-  _globals['_STATUSRESPONSE']._serialized_start=235
-  _globals['_STATUSRESPONSE']._serialized_end=342
-  _globals['_MOVEREQUEST']._serialized_start=344
-  _globals['_MOVEREQUEST']._serialized_end=431
-  _globals['_MOVERESPONSE']._serialized_start=433
-  _globals['_MOVERESPONSE']._serialized_end=464
-  _globals['_CLIENTCOMMAND']._serialized_start=466
-  _globals['_CLIENTCOMMAND']._serialized_end=541
-  _globals['_SERVEREVENT']._serialized_start=543
-  _globals['_SERVEREVENT']._serialized_end=649
-  _globals['_CHATMESSAGE']._serialized_start=651
-  _globals['_CHATMESSAGE']._serialized_end=716
-  _globals['_BLOCKUPDATED']._serialized_start=718
-  _globals['_BLOCKUPDATED']._serialized_end=787
-  _globals['_MINTERBOTSERVICE']._serialized_start=844
-  _globals['_MINTERBOTSERVICE']._serialized_end=1036
+  _globals['_EDITIONTYPE']._serialized_start=974
+  _globals['_EDITIONTYPE']._serialized_end=1026
+  _globals['_AUTHMODE']._serialized_start=1028
+  _globals['_AUTHMODE']._serialized_end=1076
+  _globals['_LOGINREQUEST']._serialized_start=22
+  _globals['_LOGINREQUEST']._serialized_end=167
+  _globals['_LOGINRESPONSE']._serialized_start=169
+  _globals['_LOGINRESPONSE']._serialized_end=244
+  _globals['_STATUSREQUEST']._serialized_start=246
+  _globals['_STATUSREQUEST']._serialized_end=281
+  _globals['_STATUSRESPONSE']._serialized_start=283
+  _globals['_STATUSRESPONSE']._serialized_end=390
+  _globals['_MOVEREQUEST']._serialized_start=392
+  _globals['_MOVEREQUEST']._serialized_end=479
+  _globals['_MOVERESPONSE']._serialized_start=481
+  _globals['_MOVERESPONSE']._serialized_end=512
+  _globals['_BLOCKREQUEST']._serialized_start=514
+  _globals['_BLOCKREQUEST']._serialized_end=581
+  _globals['_BLOCKRESPONSE']._serialized_start=583
+  _globals['_BLOCKRESPONSE']._serialized_end=649
+  _globals['_CLIENTCOMMAND']._serialized_start=651
+  _globals['_CLIENTCOMMAND']._serialized_end=726
+  _globals['_SERVEREVENT']._serialized_start=728
+  _globals['_SERVEREVENT']._serialized_end=834
+  _globals['_CHATMESSAGE']._serialized_start=836
+  _globals['_CHATMESSAGE']._serialized_end=901
+  _globals['_BLOCKUPDATED']._serialized_start=903
+  _globals['_BLOCKUPDATED']._serialized_end=972
+  _globals['_MINTERBOTSERVICE']._serialized_start=1079
+  _globals['_MINTERBOTSERVICE']._serialized_end=1314
 # @@protoc_insertion_point(module_scope)

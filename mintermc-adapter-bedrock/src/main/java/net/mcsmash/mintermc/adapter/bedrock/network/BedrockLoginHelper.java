@@ -1,0 +1,416 @@
+package net.mcsmash.mintermc.adapter.bedrock.network;
+
+import net.mcsmash.mintermc.auth.BedrockAuthSession;
+import org.cloudburstmc.protocol.bedrock.BedrockClientSession;
+import org.cloudburstmc.protocol.bedrock.codec.v2225.Bedrock_v2225;
+import org.cloudburstmc.protocol.bedrock.data.auth.AuthPayload;
+import org.cloudburstmc.protocol.bedrock.data.auth.AuthType;
+import org.cloudburstmc.protocol.bedrock.data.auth.CertificateChainPayload;
+import org.cloudburstmc.protocol.bedrock.data.auth.TokenPayload;
+import org.cloudburstmc.protocol.bedrock.packet.ClientToServerHandshakePacket;
+import org.cloudburstmc.protocol.bedrock.packet.LoginPacket;
+import org.cloudburstmc.protocol.bedrock.util.EncryptionUtils;
+import org.jose4j.json.JsonUtil;
+import org.jose4j.jws.JsonWebSignature;
+import org.jose4j.jwt.JwtClaims;
+import org.jose4j.jwx.HeaderParameterNames;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
+import java.security.KeyPair;
+import java.security.PublicKey;
+import java.util.Base64;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+/**
+ * Performs the Bedrock Edition login sequence for a single bot session.
+ * <br>
+ * The helper owns the key pair used for the self-signed login token and for the
+ * server encryption handshake. It currently implements offline (self-signed)
+ * login only, which is what an offline-mode Bedrock server expects.
+ */
+public class BedrockLoginHelper {
+
+    private static final Logger logger = LoggerFactory.getLogger(BedrockLoginHelper.class);
+
+    /** Bedrock skin images are always 64x64 RGBA in the login payload. */
+    private static final int SKIN_WIDTH = 64;
+    private static final int SKIN_HEIGHT = 64;
+
+    private static final String SKIN_RESOURCE_PATCH =
+            "{\"geometry\":{\"default\":\"geometry.humanoid.custom\"}}";
+
+    private static final String MULTIPLAYER_AUDIENCE = "api://auth-minecraft-services/multiplayer";
+
+    /**
+     * XUID advertised by the self-signed login token.
+     * <br>
+     * Each bot uses its own value so the server can tell bots apart. BDS also
+     * expects client chat packets to carry this value; a packet with an empty
+     * XUID is accepted but never relayed to other players.
+     */
+    private String xuid = Long.toUnsignedString(
+            java.util.concurrent.ThreadLocalRandom.current().nextLong(1, Long.MAX_VALUE));
+
+    /** Full-auth certificate chain, or {@code null} for an offline login. */
+    private List<String> certificateChain;
+    /** OIDC multiplayer token used as the login Token field. */
+    private String multiplayerToken;
+    /** PlayFab ID from the multiplayer token, used in the client data. */
+    private String playFabId;
+
+    /**
+     * MinterMC's own generated classic skin.
+     * <br>
+     * This is deliberately generated instead of bundling Mojang's Steve/persona
+     * skin. The retail skin textures and geometry are Mojang assets and are not
+     * covered by the MIT-licensed data packages they are often copied from.
+     */
+    private static final Map<String, Object> DEFAULT_SKIN = createDefaultSkin();
+
+    private BedrockClientSession session;
+    private final KeyPair keyPair;
+    private final String username;
+    private final String gameVersion;
+    private final String serverAddress;
+    private final UUID identity;
+
+    /** The multiplayer token shared by the NetherNet identity and the login payload. */
+    private String identityToken;
+
+    /**
+     * Creates a login helper for the given session.
+     *
+     * @param session       the Bedrock client session used to send login packets
+     * @param username      the player name shown to the server
+     * @param gameVersion   the client game version sent in the client data
+     * @param serverAddress the target address in {@code host:port} form
+     * @param identity      the offline UUID of the bot, or {@code null} to derive one
+     */
+    public BedrockLoginHelper(BedrockClientSession session, String username, String gameVersion,
+            String serverAddress, UUID identity) {
+        this(session, username, gameVersion, serverAddress, identity, null);
+    }
+
+    /**
+     * Creates a login helper that reuses an existing key pair.
+     * <br>
+     * NetherNet requires the transport identity assertion to use the same key as
+     * the Bedrock login, otherwise BDS refuses the join.
+     *
+     * @param session       the Bedrock client session used to send login packets
+     * @param username      the player name shown to the server
+     * @param gameVersion   the client game version sent in the client data
+     * @param serverAddress the target address in {@code host:port} form
+     * @param identity      the offline UUID of the bot, or {@code null} to derive one
+     * @param keyPair       the key pair to use, or {@code null} to generate one
+     */
+    public BedrockLoginHelper(BedrockClientSession session, String username, String gameVersion,
+            String serverAddress, UUID identity, KeyPair keyPair) {
+        this.session = session;
+        this.keyPair = keyPair != null ? keyPair : EncryptionUtils.createKeyPair();
+        this.username = username;
+        this.gameVersion = gameVersion;
+        this.serverAddress = serverAddress;
+        this.identity = identity != null ? identity
+                : UUID.nameUUIDFromBytes(("OfflinePlayer:" + username).getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Creates a login helper backed by a Microsoft account.
+     *
+     * @param session       the Bedrock client session, or {@code null} before it exists
+     * @param auth          the Microsoft credentials
+     * @param gameVersion   the client game version sent in the client data
+     * @param serverAddress the target address in {@code host:port} form
+     * @return a helper that sends the full certificate chain
+     */
+    public static BedrockLoginHelper forMicrosoft(BedrockClientSession session,
+            BedrockAuthSession auth, String gameVersion, String serverAddress) {
+        BedrockLoginHelper helper = new BedrockLoginHelper(session, auth.displayName(),
+                gameVersion, serverAddress, auth.identity(), auth.keyPair());
+        helper.certificateChain = List.of(auth.mojangJwt(), auth.identityJwt());
+        helper.multiplayerToken = auth.multiplayerToken();
+        helper.playFabId = auth.playFabId();
+        helper.xuid = auth.xuid();
+        return helper;
+    }
+
+    /**
+     * Sends the Bedrock login packet.
+     * <br>
+     * Offline mode uses the OIDC-style {@link TokenPayload} signed by the bot's
+     * own key. Microsoft mode sends the full Mojang certificate chain.
+     */
+    public void handleLogin() {
+        try {
+            session.sendPacketImmediately(buildLoginPacket());
+            logger.info("Sent Bedrock {} login packet for {}",
+                    certificateChain != null ? "Microsoft" : "offline", username);
+        } catch (Exception e) {
+            logger.error("Failed to create Bedrock login packet for {}", username, e);
+            session.disconnect("Login failed: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Builds the login packet without sending it.
+     * <br>
+     * Exposed separately so the token contents can be validated without a
+     * network connection.
+     *
+     * @return a ready-to-send login packet
+     * @throws Exception if the tokens cannot be signed
+     */
+    public LoginPacket buildLoginPacket() throws Exception {
+        String publicKey = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
+        LoginPacket loginPacket = new LoginPacket();
+        loginPacket.setProtocolVersion(Bedrock_v2225.CODEC.getProtocolVersion());
+        AuthPayload payload;
+        if (certificateChain != null) {
+            List<String> chain = new java.util.ArrayList<>(certificateChain.size() + 1);
+            chain.add(createCertificateAuthorityToken(publicKey));
+            chain.addAll(certificateChain);
+            payload = new MicrosoftAuthPayload(chain, multiplayerToken);
+        } else {
+            payload = new TokenPayload(identityToken(), AuthType.SELF_SIGNED);
+        }
+        loginPacket.setAuthPayload(payload);
+        loginPacket.setClientJwt(createClientDataToken(publicKey));
+        return loginPacket;
+    }
+
+    /**
+     * Builds the self-signed certificate-authority token that current Bedrock
+     * clients prepend to the Mojang certificate chain.
+     *
+     * @param publicKey the base64 client public key
+     * @return a compact ES384 JWT
+     * @throws Exception if the token cannot be signed
+     */
+    private String createCertificateAuthorityToken(String publicKey) throws Exception {
+        JwtClaims claims = new JwtClaims();
+        claims.setExpirationTimeMinutesInTheFuture(360);
+        claims.setNotBeforeMinutesInThePast(360);
+        claims.setClaim("identityPublicKey", publicKey);
+        claims.setClaim("certificateAuthority", true);
+
+        JsonWebSignature signature = new JsonWebSignature();
+        signature.setAlgorithmHeaderValue(EncryptionUtils.ALGORITHM_TYPE);
+        signature.setHeader(HeaderParameterNames.X509_URL, publicKey);
+        signature.setKey(keyPair.getPrivate());
+        signature.setPayload(claims.toJson());
+        return signature.getCompactSerialization();
+    }
+
+    /**
+     * @return the XUID this bot advertises to the server
+     */
+    public String xuid() {
+        return xuid;
+    }
+
+    /**
+     * Returns the multiplayer token used both for the login payload and for the NetherNet
+     * identity assertion.
+     * <br>
+     * The retail client presents the same multiplayer token in both places. Sharing it keeps the
+     * transport identity and the login consistent, and lets the token be generated before the
+     * WebRTC session exists.
+     *
+     * @return the cached compact ES384 multiplayer token
+     */
+    public String identityToken() {
+        if (identityToken == null) {
+            try {
+                identityToken = createIdentityToken(
+                        Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded()));
+            } catch (Exception e) {
+                throw new IllegalStateException("Failed to create the Bedrock identity token", e);
+            }
+        }
+        return identityToken;
+    }
+
+    /**
+     * Attaches the session after the transport has created it.
+     * <br>
+     * The token must be generated before connecting so the NetherNet identity can carry it, but
+     * the session only exists once the connection has been established.
+     *
+     * @param session the Bedrock session for this bot
+     */
+    public void setSession(BedrockClientSession session) {
+        this.session = session;
+    }
+
+    /**
+     * Online (Microsoft account) login is not implemented yet.
+     * <br>
+     * The current login flow only supports offline-mode servers. Disconnecting
+     * with a clear reason avoids silently joining with an invalid identity.
+     */
+    public void handleOnlineLogin() {
+        logger.error("Bedrock online login is not implemented yet; use an offline-mode server");
+        session.disconnect("Online mode is not supported yet");
+    }
+
+    /**
+     * Completes the server encryption handshake.
+     * <br>
+     * The server sends its public key and salt in a signed JWT. The bot derives
+     * the shared AES key, installs it on the session, and answers with a
+     * {@link ClientToServerHandshakePacket}.
+     *
+     * @param jwt the JWT from {@code ServerToClientHandshakePacket}
+     * @throws Exception if the JWT cannot be parsed or the key cannot be derived
+     */
+    public void handleServerToClientHandshake(String jwt) throws Exception {
+        JsonWebSignature signature = new JsonWebSignature();
+        signature.setCompactSerialization(jwt);
+
+        String serverKeyBase64 = (String) signature.getHeader(HeaderParameterNames.X509_URL);
+        Map<String, Object> payload = JsonUtil.parseJson(signature.getUnverifiedPayload());
+        byte[] salt = Base64.getDecoder().decode((String) payload.get("salt"));
+        PublicKey serverKey = EncryptionUtils.parseKey(serverKeyBase64);
+
+        SecretKey secretKey = EncryptionUtils.getSecretKey(keyPair.getPrivate(), serverKey, salt);
+        session.enableEncryption(secretKey);
+        session.sendPacketImmediately(new ClientToServerHandshakePacket());
+        logger.info("Completed Bedrock encryption handshake for {}", username);
+    }
+
+    /**
+     * Builds the self-signed multiplayer token used as the login auth payload.
+     *
+     * @param publicKey the base64 encoded X.509 public key of the bot
+     * @return a compact ES384 JWT
+     * @throws Exception if the token cannot be signed
+     */
+    private String createIdentityToken(String publicKey) throws Exception {
+        JwtClaims claims = new JwtClaims();
+        claims.setIssuer("self");
+        claims.setAudience(MULTIPLAYER_AUDIENCE);
+        claims.setClaim("cpk", publicKey);
+        claims.setClaim("xid", xuid);
+        claims.setClaim("xname", username);
+        claims.setClaim("identity", identity.toString());
+        claims.setClaim("leguuid", identity.toString());
+        claims.setClaim("mid", java.util.UUID.randomUUID().toString());
+        claims.setIssuedAtToNow();
+        claims.setNotBeforeMinutesInThePast(1);
+        claims.setExpirationTimeMinutesInTheFuture(60);
+
+        JsonWebSignature signature = new JsonWebSignature();
+        signature.setAlgorithmHeaderValue(EncryptionUtils.ALGORITHM_TYPE);
+        signature.setHeader(HeaderParameterNames.X509_URL, publicKey);
+        signature.setKey(keyPair.getPrivate());
+        signature.setPayload(claims.toJson());
+        return signature.getCompactSerialization();
+    }
+
+    /**
+     * Builds and signs the client data token sent with the login packet.
+     *
+     * @param publicKey the base64 encoded X.509 public key of the bot
+     * @return a compact ES384 JWT containing the client and skin data
+     * @throws Exception if the token cannot be signed
+     */
+    private String createClientDataToken(String publicKey) throws Exception {
+        Map<String, Object> data = new LinkedHashMap<>(DEFAULT_SKIN);
+        data.put("GameVersion", gameVersion);
+        data.put("ServerAddress", serverAddress);
+        data.put("ThirdPartyName", username);
+        data.put("LanguageCode", "en_US");
+
+        data.put("PlayFabId", playFabIdForLogin());
+        data.put("DeviceId", UUID.randomUUID().toString());
+        data.put("DeviceModel", "MinterMC");
+        data.put("DeviceOS", 12); // BDS rejects Windows (7) during login; use the retail Switch value
+        data.put("UIProfile", 0);
+        data.put("GuiScale", -1);
+        data.put("GraphicsMode", 1);
+        data.put("CurrentInputMode", 1);
+        data.put("DefaultInputMode", 1);
+        data.put("PlatformOfflineId", "");
+        data.put("PlatformOnlineId", "");
+        data.put("SelfSignedId", UUID.randomUUID().toString());
+        data.put("ClientRandomId", System.currentTimeMillis());
+        data.put("IsEditorMode", false);
+        data.put("FilterProfanity", false);
+        data.put("ClientIsEditorCapable", false);
+        data.put("ClientEditorConnectionIntent", 0);
+        data.put("TrustedSkin", false);
+        data.put("OverrideSkin", false);
+        data.put("CompatibleWithClientSideChunkGen", false);
+        data.put("MaxViewDistance", 0);
+        data.put("MemoryTier", 0);
+        data.put("PlatformType", 0);
+
+        JsonWebSignature signature = new JsonWebSignature();
+        signature.setAlgorithmHeaderValue(EncryptionUtils.ALGORITHM_TYPE);
+        signature.setHeader(HeaderParameterNames.X509_URL, publicKey);
+        signature.setKey(keyPair.getPrivate());
+        signature.setPayload(JsonUtil.toJson(data));
+        return signature.getCompactSerialization();
+    }
+
+    private static Map<String, Object> createDefaultSkin() {
+        Map<String, Object> skin = new LinkedHashMap<>();
+        skin.put("SkinId", UUID.randomUUID().toString());
+        skin.put("SkinData", Base64.getEncoder().encodeToString(createSolidSkin()));
+        skin.put("SkinImageWidth", SKIN_WIDTH);
+        skin.put("SkinImageHeight", SKIN_HEIGHT);
+        skin.put("SkinResourcePatch", encodeUtf8(SKIN_RESOURCE_PATCH));
+        skin.put("SkinGeometryData", "");
+        skin.put("SkinGeometryDataEngineVersion", encodeUtf8("1.14.0"));
+        skin.put("SkinAnimationData", "");
+        skin.put("AnimatedImageData", List.of());
+        skin.put("PersonaPieces", List.of());
+        skin.put("PieceTintColors", List.of());
+        skin.put("PersonaSkin", false);
+        skin.put("PremiumSkin", false);
+        skin.put("CapeId", "");
+        skin.put("CapeData", "");
+        skin.put("CapeImageWidth", 0);
+        skin.put("CapeImageHeight", 0);
+        skin.put("CapeOnClassicSkin", false);
+        skin.put("ArmSize", "wide");
+        skin.put("SkinColor", "#FFFFFF");
+        return Map.copyOf(skin);
+    }
+
+    private static byte[] createSolidSkin() {
+        byte[] skin = new byte[SKIN_WIDTH * SKIN_HEIGHT * 4];
+        for (int i = 0; i < skin.length; i += 4) {
+            skin[i] = (byte) 0x3F;
+            skin[i + 1] = (byte) 0x8F;
+            skin[i + 2] = (byte) 0xD4;
+            skin[i + 3] = (byte) 0xFF;
+        }
+        return skin;
+    }
+
+    private static String encodeUtf8(String value) {
+        return Base64.getEncoder().encodeToString(value.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private String playFabIdForLogin() {
+        if (playFabId != null && playFabId.matches("[0-9a-fA-F]+")) {
+            return playFabId;
+        }
+        return randomPlayFabId();
+    }
+
+    private static String randomPlayFabId() {
+        String hex = UUID.randomUUID().toString().replace("-", "");
+        return hex.substring(0, 16).toLowerCase();
+    }
+}
+
+

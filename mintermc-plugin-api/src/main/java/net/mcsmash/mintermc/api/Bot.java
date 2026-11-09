@@ -1,6 +1,7 @@
 package net.mcsmash.mintermc.api;
 
 import net.mcsmash.mintermc.api.block.Block;
+import net.mcsmash.mintermc.api.event.BotListener;
 import net.mcsmash.mintermc.api.math.Location;
 import net.mcsmash.mintermc.api.math.Vector3;
 
@@ -93,11 +94,65 @@ public interface Bot {
     Block getBlockAt(Vector3 position);
 
     /**
+     * Retrieves a block only when it is already cached.
+     * <br>
+     * Unlike {@link #getBlockAt(Vector3)} this never waits for the server, so it
+     * is safe to call from event handlers and pathfinding loops.
+     *
+     * @param position the position to get the block at
+     * @return the block, or {@code null} when the section is not loaded
+     */
+    default Block getLoadedBlockAt(Vector3 position) {
+        return null;
+    }
+
+    /**
      * Retrieves the location of the bot.
      * 
      * @return The location of the bot
      */
     Location getLocation();
+
+    /**
+     * Retrieves the last health value reported by the server.
+     *
+     * @return the health value, from 0 to 20
+     */
+    float getHealth();
+
+    /**
+     * Subscribes a listener to this bot's events.
+     *
+     * @param listener the listener to add
+     */
+    void subscribe(BotListener listener);
+
+    /**
+     * Removes a previously registered listener.
+     *
+     * @param listener the listener to remove
+     */
+    void unsubscribe(BotListener listener);
+
+    /**
+     * Runs a task on this bot's event loop every fixed number of ticks.
+     * <br>
+     * One tick is 50 ms. Use the returned handle to stop the task.
+     *
+     * @param ticks the interval in ticks
+     * @param task  the task to run
+     * @return a handle that can cancel the task
+     */
+    ScheduledTask every(long ticks, Runnable task);
+
+    /**
+     * Runs a task once on this bot's event loop after the given delay.
+     *
+     * @param ticks the delay in ticks
+     * @param task  the task to run
+     * @return a handle that can cancel the task
+     */
+    ScheduledTask after(long ticks, Runnable task);
 
     /**
      * Sends a message to the in-game chat.

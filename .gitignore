@@ -3,6 +3,9 @@
 build/
 !gradle/wrapper/gradle-wrapper.jar
 
+# Microsoft account token caches (never commit)
+.mintermc/
+
 # IDEs and Editors
 .idea/
 *.iml
@@ -44,7 +47,42 @@ ehthumbs.db
 Thumbs.db
 
 # MinterMC specific
-plugins/
+/plugins/
+/plugin-data/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Secrets and local server configuration
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+captured/
+server.properties
+permissions.json
+allowlist.json
+
+# Local tooling
+local.properties
+*.local
+.run/
+.fleet/
+*.bak
+*.tmp
+*.swp
+*.swo
+
+# Dependencies
+node_modules/
 
 #test
 examples/js/node_modules
+# NetherNet sidecar
+sidecar/node_modules/

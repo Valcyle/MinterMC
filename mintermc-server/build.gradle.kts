@@ -11,6 +11,7 @@ application {
 
 dependencies {
     implementation(project(":mintermc-core"))
+    implementation(project(":mintermc-auth"))
     
     // Include adapters so they are packaged and available at runtime
     implementation(project(":mintermc-adapter-java"))
@@ -26,4 +27,10 @@ tasks.jar {
             "Main-Class" to "net.mcsmash.mintermc.server.MinterServer"
         )
     }
+}
+
+tasks.named<JavaExec>("run") {
+    // Resolve plugins/ and plugin-data/ from the repository root so the layout
+    // matches the documentation.
+    workingDir = rootProject.projectDir
 }

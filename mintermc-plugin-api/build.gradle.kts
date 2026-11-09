@@ -3,6 +3,5 @@ plugins {
 }
 
 dependencies {
-    // This module should have ZERO dependencies on Minecraft-specific protocols or gRPC
-    // Only pure Java 25 standard library and perhaps very lightweight utilities
+    // This module has no dependencies: plugins compile against the JDK only.
 }

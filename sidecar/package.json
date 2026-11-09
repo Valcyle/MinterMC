@@ -1,0 +1,12 @@
+﻿{
+  "name": "mintermc-nethernet-sidecar",
+  "version": "1.0.0",
+  "private": true,
+  "description": "NetherNet transport bridge for MinterMC",
+  "main": "nethernet-bridge.js",
+  "dependencies": {
+    "nethernet": "1.1.2"
+  }
+}
+
+

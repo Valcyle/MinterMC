@@ -2,6 +2,7 @@ package net.mcsmash.mintermc.core;
 
 import net.mcsmash.mintermc.api.math.Location;
 import net.mcsmash.mintermc.api.math.Vector3;
+import net.mcsmash.mintermc.api.block.Block;
 import net.mcsmash.mintermc.protocol.*;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
@@ -20,10 +21,15 @@ public class MinterBotServiceImpl extends MinterBotServiceGrpc.MinterBotServiceI
     private static final Logger logger = LoggerFactory.getLogger(MinterBotServiceImpl.class);
     private final BotManager botManager;
     private final BotSessionFactory sessionFactory;
+    private final PluginManager pluginManager;
+    private final CommandRegistry commandRegistry;
 
-    public MinterBotServiceImpl(BotManager botManager, BotSessionFactory sessionFactory) {
+    public MinterBotServiceImpl(BotManager botManager, BotSessionFactory sessionFactory,
+            PluginManager pluginManager, CommandRegistry commandRegistry) {
         this.botManager = botManager;
         this.sessionFactory = sessionFactory;
+        this.pluginManager = pluginManager;
+        this.commandRegistry = commandRegistry;
     }
 
     @Override
@@ -38,8 +44,11 @@ public class MinterBotServiceImpl extends MinterBotServiceGrpc.MinterBotServiceI
             BotSession session = sessionFactory.create(sessionToken, request);
 
             // Register and start the virtual thread loop
+            session.setUniqueId(UUID.randomUUID());
+            session.setCommandRegistry(commandRegistry);
             botManager.registerSession(session);
             session.startEventLoop();
+            pluginManager.notifyBotJoin(session);
 
             LoginResponse response = LoginResponse.newBuilder()
                     .setSuccess(true)
@@ -110,10 +119,62 @@ public class MinterBotServiceImpl extends MinterBotServiceGrpc.MinterBotServiceI
     }
 
     @Override
+    public void getBlock(BlockRequest request, StreamObserver<BlockResponse> responseObserver) {
+        BotSession session = botManager.getSessionByToken(request.getSessionId());
+
+        if (session == null) {
+            responseObserver.onError(io.grpc.Status.NOT_FOUND
+                    .withDescription("Invalid or expired session token")
+                    .asRuntimeException());
+            return;
+        }
+
+        Block block = session.getBlockAt(
+                new Vector3(request.getX(), request.getY(), request.getZ()));
+        BlockResponse response = block == null
+                ? BlockResponse.newBuilder().setFound(false).build()
+                : BlockResponse.newBuilder()
+                        .setFound(true)
+                        .setMaterial(block.getMaterialName())
+                        .setPassable(block.isPassable())
+                        .build();
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+    }
+
+    @Override
     public StreamObserver<ClientCommand> eventStream(StreamObserver<ServerEvent> responseObserver) {
-        // Here we handle the bi-directional stream for events like chat messages.
+        // Here we handle the bi-directional stream for commands and events.
         return new StreamObserver<ClientCommand>() {
+            private final Object sendLock = new Object();
             private BotSession session;
+            private boolean subscribed;
+
+            private final BotSessionListener listener = (sender, content) -> {
+                ServerEvent event = ServerEvent.newBuilder()
+                        .setChatReceived(ChatMessage.newBuilder()
+                                .setSender(sender)
+                                .setContent(content)
+                                .setTimestamp(System.currentTimeMillis())
+                                .build())
+                        .build();
+                try {
+                    synchronized (sendLock) {
+                        responseObserver.onNext(event);
+                    }
+                } catch (Exception e) {
+                    logger.debug("Could not deliver a chat event to the SDK", e);
+                }
+            };
+
+            private void detach() {
+                if (subscribed && session != null) {
+                    session.removeListener(listener);
+                    subscribed = false;
+                    logger.debug("Detached the SDK listener from session {}",
+                            session.getSessionToken());
+                }
+            }
 
             @Override
             public void onNext(ClientCommand command) {
@@ -125,6 +186,9 @@ public class MinterBotServiceImpl extends MinterBotServiceGrpc.MinterBotServiceI
                                 .asRuntimeException());
                         return;
                     }
+                    session.addListener(listener);
+                    subscribed = true;
+                    logger.debug("Attached an SDK listener to session {}", command.getSessionId());
                 }
 
                 if (command.hasChatMessage()) {
@@ -136,14 +200,13 @@ public class MinterBotServiceImpl extends MinterBotServiceGrpc.MinterBotServiceI
             @Override
             public void onError(Throwable t) {
                 logger.warn("Event stream error", t);
-                if (session != null) {
-                    session.disconnect(); // Terminate gracefully
-                }
+                detach();
             }
 
             @Override
             public void onCompleted() {
                 logger.info("Event stream completed by client");
+                detach();
                 responseObserver.onCompleted();
             }
         };

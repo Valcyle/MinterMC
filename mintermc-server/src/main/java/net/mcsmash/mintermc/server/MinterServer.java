@@ -2,6 +2,7 @@ package net.mcsmash.mintermc.server;
 
 import net.mcsmash.mintermc.adapter.bedrock.BedrockEditionBotSession;
 import net.mcsmash.mintermc.core.BotManager;
+import net.mcsmash.mintermc.core.CommandRegistry;
 import net.mcsmash.mintermc.core.MinterBotServiceImpl;
 import net.mcsmash.mintermc.core.PluginManager;
 import io.grpc.Server;
@@ -11,7 +12,9 @@ import org.slf4j.LoggerFactory;
 
 import net.mcsmash.mintermc.core.BotSessionFactory;
 import net.mcsmash.mintermc.adapter.java.JavaEditionBotSession;
-import net.mcsmash.mintermc.core.BotOptions;
+import net.mcsmash.mintermc.api.bot.AuthMode;
+import net.mcsmash.mintermc.api.bot.BotOptions;
+import net.mcsmash.mintermc.auth.MicrosoftAuthService;
 import net.mcsmash.mintermc.protocol.EditionType;
 
 import java.io.IOException;
@@ -26,15 +29,31 @@ public class MinterServer {
 
     private static final Logger logger = LoggerFactory.getLogger(MinterServer.class);
 
+    /** Overridable so a local server can be tested without rebuilding. */
+    private static final String JAVA_VERSION =
+            envOrDefault("MINTER_JAVA_VERSION", "1.21.4");
+    private static final String BEDROCK_VERSION =
+            envOrDefault("MINTER_BEDROCK_VERSION", "1.26.60");
+    private static final String BEDROCK_TRANSPORT =
+            envOrDefault("MINTER_BEDROCK_TRANSPORT", "nethernet");
+
     private final int port;
     private final Server server;
     private final BotManager botManager;
     private final PluginManager pluginManager;
+    private final CommandRegistry commandRegistry;
+    private final MicrosoftAuthService authService;
 
     public MinterServer(int port) {
         this.port = port;
         this.botManager = new BotManager();
-        this.pluginManager = new PluginManager(new java.io.File("plugins"));
+        this.commandRegistry = new CommandRegistry();
+        this.authService = new MicrosoftAuthService(MicrosoftAuthService.defaultCacheDirectory());
+        this.pluginManager = new PluginManager(
+                new java.io.File(envOrDefault("MINTER_PLUGIN_DIR", "plugins")),
+                new java.io.File(envOrDefault("MINTER_PLUGIN_DATA", "plugin-data")),
+                botManager,
+                commandRegistry);
 
         // Load plugins before starting the server
         this.pluginManager.loadPlugins();
@@ -42,37 +61,47 @@ public class MinterServer {
 
         // Factory that knows how to create specific adapter sessions
         BotSessionFactory sessionFactory = (sessionToken, request) -> {
+            AuthMode authMode = request.getAuthMode()
+                    == net.mcsmash.mintermc.protocol.AuthMode.AUTH_MICROSOFT
+                            ? AuthMode.MICROSOFT
+                            : AuthMode.OFFLINE;
+            String account = request.getAccount().isBlank() ? "default" : request.getAccount();
+
             if (request.getTargetEdition() == EditionType.JAVA_EDITION) {
                 JavaEditionBotSession session = new JavaEditionBotSession(sessionToken);
 
-                // Trigger connection (this is blocking/network-heavy,
-                // but MinterBotServiceImpl calls this inside its own context)
-                // For now we use default options or map from request if available
                 BotOptions options = new BotOptions.Builder()
-                        .version("1.21.4") // Default version
+                        .version(JAVA_VERSION)
+                        .authMode(authMode)
+                        .account(account)
                         .build();
 
                 session.connect(
                         request.getHost(),
                         request.getPort(),
                         request.getBotName(),
-                        false, // Offline mode for now to simplify testing
-                        options);
+                        authMode == AuthMode.MICROSOFT,
+                        options,
+                        authService);
 
                 return session;
-            } else if(request.getTargetEdition() == EditionType.BEDROCK_EDITION){
+            } else if (request.getTargetEdition() == EditionType.BEDROCK_EDITION) {
                 BedrockEditionBotSession session = new BedrockEditionBotSession(sessionToken);
 
                 BotOptions options = new BotOptions.Builder()
-                        .version("1.26.3")
+                        .version(BEDROCK_VERSION) // Protocol 2225 (Bedrock_v2225)
+                        .transport(BEDROCK_TRANSPORT)
+                        .authMode(authMode)
+                        .account(account)
                         .build();
 
                 session.connect(
                         request.getHost(),
                         request.getPort(),
                         request.getBotName(),
-                        false,
-                        options);
+                        authMode == AuthMode.MICROSOFT,
+                        options,
+                        authService);
 
                 return session;
             } else {
@@ -82,7 +111,8 @@ public class MinterServer {
 
         // MinterBotServiceImpl handles the gRPC endpoints
         this.server = ServerBuilder.forPort(port)
-                .addService(new MinterBotServiceImpl(botManager, sessionFactory))
+                .addService(new MinterBotServiceImpl(
+                        botManager, sessionFactory, pluginManager, commandRegistry))
                 .build();
     }
 
@@ -113,6 +143,12 @@ public class MinterServer {
         if (server != null) {
             server.shutdown().awaitTermination(30, java.util.concurrent.TimeUnit.SECONDS);
         }
+        authService.close();
+    }
+
+    private static String envOrDefault(String key, String fallback) {
+        String value = System.getenv(key);
+        return value == null || value.isBlank() ? fallback : value;
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {
@@ -125,3 +161,4 @@ public class MinterServer {
         minterServer.start();
     }
 }
+

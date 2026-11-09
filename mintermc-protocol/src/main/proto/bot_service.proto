@@ -16,6 +16,9 @@ service MinterBotService {
     
     // Move the bot to the specified coordinates (Simplified movement API)
     rpc MoveTo (MoveRequest) returns (MoveResponse);
+
+    // Retrieve the block at the specified coordinates
+    rpc GetBlock (BlockRequest) returns (BlockResponse);
     
     // [IMPORTANT] Event subscription and command sending via bidirectional streaming
     // This allows the SDK to hook into asynchronous events such as chat and block breaking
@@ -31,12 +34,21 @@ enum EditionType {
     BEDROCK_EDITION = 1;
 }
 
+// How the bot proves its identity to the server.
+enum AuthMode {
+    // Self-signed offline identity. Only offline-mode servers accept it.
+    AUTH_OFFLINE = 0;
+    // Microsoft account sign-in through the device code flow.
+    AUTH_MICROSOFT = 1;
+}
+
 message LoginRequest {
     string bot_name = 1; // Player name or UUID
     EditionType target_edition = 2; // JE or BE
     string host = 3; // Target server address
     int32 port = 4; // Target server port
-    // TODO: Add actual MS account authentication tokens, etc.
+    AuthMode auth_mode = 5; // Offline identity or Microsoft account
+    string account = 6; // Local name for the Microsoft token cache (e.g. "main")
 }
 
 message LoginResponse {
@@ -68,6 +80,19 @@ message MoveRequest {
 
 message MoveResponse {
     bool reached = 1; // Whether the bot reached the destination, failed, or was canceled
+}
+
+message BlockRequest {
+    string session_id = 1;
+    int32 x = 2;
+    int32 y = 3;
+    int32 z = 4;
+}
+
+message BlockResponse {
+    bool found = 1; // False when the block is outside the world or not loaded
+    string material = 2; // Block identifier such as minecraft:stone
+    bool passable = 3; // Whether a player can move through the block
 }
 
 // Commands from SDK to the kernel (on the event stream)

@@ -35,6 +35,16 @@ public class BotManager {
     }
 
     /**
+     * Retrieves a bot session by its MinterMC unique id.
+     *
+     * @param uniqueId the bot uuid
+     * @return The associated BotSession, or null if not found
+     */
+    public BotSession getSessionByUniqueId(UUID uniqueId) {
+        return sessionsByUuid.get(uniqueId);
+    }
+
+    /**
      * Removes a session from the manager and shuts down its virtual thread.
      * 
      * @param token The session token
