@@ -75,7 +75,9 @@ cd MinterMC
 
 トークンキャッシュは `MINTER_AUTH_DIR`（既定は `~/.mintermc/accounts`）に保存されます。
 リフレッシュトークンを含むため、リポジトリに置かず、ログや第三者と共有しないでください。
-Microsoft モードは実験的です。自分の管理下のサーバーで検証してください。
+Microsoft モードは実験的です。自分の管理下のサーバーで検証してください。完全な
+Bedrock の例は [`examples/python/join_be_auth.py`](examples/python/join_be_auth.py)
+にあります。
 
 ### Plugin Development
 

@@ -231,7 +231,8 @@ response = stub.Login(bot_service_pb2.LoginRequest(
 ```
 
 The Python stubs in `examples/python` may need regeneration to expose the new
-fields; see section 2.
+fields; see section 2. An executable example is
+[`examples/python/join_be_auth.py`](../examples/python/join_be_auth.py).
 
 ---
 

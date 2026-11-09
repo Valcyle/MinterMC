@@ -76,7 +76,9 @@ kernel log; later sign-ins reuse the cached refresh token.
 The token cache is written to `MINTER_AUTH_DIR` (default
 `~/.mintermc/accounts`). It contains refresh tokens: keep it out of the
 repository and do not log or share it. Microsoft mode is experimental; test it
-on a server you control before relying on it.
+on a server you control before relying on it. See
+[`examples/python/join_be_auth.py`](examples/python/join_be_auth.py) for a
+complete Bedrock example.
 
 ### Plugin Development
 
