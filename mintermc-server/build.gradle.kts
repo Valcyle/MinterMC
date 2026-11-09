@@ -11,6 +11,7 @@ application {
 
 dependencies {
     implementation(project(":mintermc-core"))
+    implementation(project(":mintermc-auth"))
     
     // Include adapters so they are packaged and available at runtime
     implementation(project(":mintermc-adapter-java"))

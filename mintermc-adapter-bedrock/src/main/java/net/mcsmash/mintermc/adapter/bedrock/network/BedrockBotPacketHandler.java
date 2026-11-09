@@ -103,7 +103,7 @@ public class BedrockBotPacketHandler implements BedrockPacketHandler {
         ChannelPipeline pipeline = session.getPeer().getChannel().pipeline();
         pipeline.replace(CompressionCodec.NAME, CompressionCodec.NAME,
                 new TolerantCompressionCodec(compressionStrategy(packet.getCompressionAlgorithm()), true));
-        loginHelper.handleOfflineLogin();
+        loginHelper.handleLogin();
         return PacketSignal.HANDLED;
     }
 

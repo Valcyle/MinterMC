@@ -24,6 +24,7 @@ rootProject.name = "MinterMC"
 
 include("mintermc-plugin-api")
 include("mintermc-protocol")
+include("mintermc-auth")
 include("mintermc-core")
 include("mintermc-adapter-java")
 include("mintermc-adapter-bedrock")

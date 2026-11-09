@@ -2,9 +2,11 @@ package net.mcsmash.mintermc.adapter.bedrock.network;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import net.mcsmash.mintermc.auth.BedrockAuthSession;
 import org.cloudburstmc.protocol.bedrock.codec.BedrockCodec;
 import org.cloudburstmc.protocol.bedrock.codec.v2225.Bedrock_v2225;
 import org.cloudburstmc.protocol.bedrock.data.auth.AuthType;
+import org.cloudburstmc.protocol.bedrock.data.auth.CertificateChainPayload;
 import org.cloudburstmc.protocol.bedrock.data.auth.TokenPayload;
 import org.cloudburstmc.protocol.bedrock.packet.LoginPacket;
 import org.cloudburstmc.protocol.bedrock.util.EncryptionUtils;
@@ -14,9 +16,11 @@ import org.jose4j.jws.JsonWebSignature;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
+import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -91,6 +95,50 @@ class BedrockLoginHelperTest {
                 null, "TestBot", "1.26.60", "127.0.0.1:19132", null);
 
         assertNotEquals(first.xuid(), second.xuid());
+    }
+
+    @Test
+    void serializesMicrosoftLoginPacket() throws Exception {
+        KeyPair keyPair = EncryptionUtils.createKeyPair();
+        BedrockAuthSession auth = new BedrockAuthSession(
+                "TestBot", "1234567890", UUID.randomUUID(), keyPair,
+                "mojang.jwt", "identity.jwt", "multiplayer.jwt",
+                "https://authorization.franchise.minecraft-services.net");
+
+        BedrockLoginHelper helper = BedrockLoginHelper.forMicrosoft(
+                null, auth, "1.26.60", "127.0.0.1:19132");
+        LoginPacket packet = helper.buildLoginPacket();
+
+        assertTrue(packet.getAuthPayload() instanceof CertificateChainPayload);
+        CertificateChainPayload payload = (CertificateChainPayload) packet.getAuthPayload();
+        assertEquals(List.of("mojang.jwt", "identity.jwt"), payload.getChain());
+        assertEquals("1234567890", helper.xuid());
+
+        BedrockCodec codec = Bedrock_v2225.CODEC.toBuilder()
+                .updateSerializer(LoginPacket.class, new MinterLoginSerializer())
+                .build();
+
+        ByteBuf buffer = Unpooled.buffer();
+        try {
+            codec.tryEncode(codec.createHelper(), buffer, packet);
+
+            assertEquals(2225, buffer.readInt(), "protocol version");
+            int tokensLength = VarInts.readUnsignedInt(buffer);
+            ByteBuf tokens = buffer.readSlice(tokensLength);
+
+            int authLength = tokens.readIntLE();
+            String authJson = tokens.readCharSequence(authLength, StandardCharsets.UTF_8).toString();
+            int clientLength = tokens.readIntLE();
+            tokens.readCharSequence(clientLength, StandardCharsets.UTF_8);
+            assertEquals(0, tokens.readableBytes(), "tokens must be fully consumed");
+
+            Map<String, Object> parsed = JsonUtil.parseJson(authJson);
+            assertEquals(0, ((Number) parsed.get("AuthenticationType")).intValue());
+            Map<String, Object> certificate = JsonUtil.parseJson((String) parsed.get("Certificate"));
+            assertEquals(List.of("mojang.jwt", "identity.jwt"), certificate.get("chain"));
+        } finally {
+            buffer.release();
+        }
     }
 
     @Test

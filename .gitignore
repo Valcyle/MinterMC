@@ -3,6 +3,9 @@
 build/
 !gradle/wrapper/gradle-wrapper.jar
 
+# Microsoft account token caches (never commit)
+.mintermc/
+
 # IDEs and Editors
 .idea/
 *.iml

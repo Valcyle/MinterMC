@@ -25,10 +25,12 @@ license, and required attribution.
 | Cloudburst Netty transport (`netty-transport-nethernet`, `netty-transport-raknet`) | 2.0.0.CR6-SNAPSHOT | Apache-2.0 |
 | Cloudburst Math | 2.0-SNAPSHOT | MIT |
 | MCProtocolLib | 1.21.4-1 | MIT |
+| MinecraftAuth | 5.0.2 | LGPL-3.0 |
+| Lenni0451 commons (`httpclient`, `gson`) | 1.9.2 | MIT |
 | libdatachannel-java | 0.24.6.0 | MIT |
 | libdatachannel (native WebRTC library shipped in the platform jar) | 0.24.x | MPL-2.0 |
 | gRPC Java | 1.62.2 | Apache-2.0 |
-| Gson | 2.13.2 | Apache-2.0 |
+| Gson | 2.14.0 | Apache-2.0 |
 | jose4j | 0.9.6 | Apache-2.0 |
 | Nimbus JOSE + JWT | 10.8 | Apache-2.0 |
 | Netty | 4.1.x | Apache-2.0 |
@@ -37,6 +39,16 @@ license, and required attribution.
 libdatachannel is used as an unmodified native library. Its source is available
 from https://github.com/paullouisageneau/libdatachannel, and the MPL-2.0 text
 is available at https://www.mozilla.org/en-US/MPL/2.0/.
+
+### MinecraftAuth 5.0.2
+
+MinecraftAuth is used for Microsoft/Xbox authentication in the Java and Bedrock
+adapters. It is included as an unmodified, separate runtime JAR and is not
+shaded into MinterMC's own classes. To replace it, substitute a compatible
+MinecraftAuth JAR in the application's `lib` directory.
+
+- Source: https://github.com/RaphiMC/MinecraftAuth
+- License: LGPL-3.0, https://www.gnu.org/licenses/lgpl-3.0.html
 
 ## MIT License
 

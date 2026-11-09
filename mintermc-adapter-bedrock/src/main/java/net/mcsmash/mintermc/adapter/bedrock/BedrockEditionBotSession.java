@@ -16,6 +16,8 @@ import net.mcsmash.mintermc.api.block.Block;
 import net.mcsmash.mintermc.api.bot.BotOptions;
 import net.mcsmash.mintermc.api.math.Location;
 import net.mcsmash.mintermc.api.math.Vector3;
+import net.mcsmash.mintermc.auth.BedrockAuthSession;
+import net.mcsmash.mintermc.auth.MicrosoftAuthService;
 import net.mcsmash.mintermc.core.BotSession;
 import org.cloudburstmc.netty.channel.raknet.RakChannelFactory;
 import org.cloudburstmc.netty.channel.raknet.config.RakChannelOption;
@@ -349,14 +351,30 @@ public class BedrockEditionBotSession extends BotSession {
      * The method blocks until the selected transport is established. The
      * Bedrock login itself continues asynchronously on the Netty event loop.
      *
-     * @param host       the target server host
-     * @param port       the target server port
-     * @param username   the player name to join with
-     * @param onlineMode whether to use Microsoft account authentication
-     * @param options    the bot options such as the client version and transport
+     * @param host        the target server host
+     * @param port        the target server port
+     * @param username    the player name to join with
+     * @param onlineMode  whether to use Microsoft account authentication
+     * @param options     the bot options such as the client version and transport
+     * @param authService the Microsoft authentication service, or {@code null}
      */
     public void connect(String host, int port, String username, boolean onlineMode,
-            BotOptions options) {
+            BotOptions options, MicrosoftAuthService authService) {
+        BedrockAuthSession auth = null;
+        if (onlineMode) {
+            if (authService == null) {
+                throw new IllegalStateException("Microsoft authentication is not configured");
+            }
+            try {
+                auth = authService.loginBedrock(options.account(), options.version());
+                username = auth.displayName();
+                logger.info("Authenticated as {} (xuid {})", auth.displayName(), auth.xuid());
+            } catch (Exception e) {
+                throw new IllegalStateException(
+                        "Microsoft sign-in failed: " + e.getMessage(), e);
+            }
+        }
+
         this.setUsername(username);
         this.setVersion(options.version());
         this.setEdition("Bedrock");
@@ -364,15 +382,20 @@ public class BedrockEditionBotSession extends BotSession {
         String transport = options.transport() != null ? options.transport() : "raknet";
         if (transport.toLowerCase().startsWith("nethernet")) {
             connectNetherNet(host, port, username, options,
-                    "nethernet-lan".equalsIgnoreCase(transport));
+                    "nethernet-lan".equalsIgnoreCase(transport), auth);
         } else {
-            connectRakNet(host, port, username, options);
+            connectRakNet(host, port, username, options, auth);
         }
     }
 
-    private void connectRakNet(String host, int port, String username, BotOptions options) {
+    private void connectRakNet(String host, int port, String username, BotOptions options,
+            BedrockAuthSession auth) {
         NioEventLoopGroup group = new NioEventLoopGroup();
         this.eventLoopGroup = group;
+
+        BedrockLoginHelper loginHelper = auth != null
+                ? BedrockLoginHelper.forMicrosoft(null, auth, options.version(), host + ":" + port)
+                : null;
 
         ChannelFuture future = new Bootstrap()
                 .channelFactory(RakChannelFactory.client(NioDatagramChannel.class))
@@ -380,7 +403,7 @@ public class BedrockEditionBotSession extends BotSession {
                 .handler(new BedrockClientInitializer() {
                     @Override
                     protected void initSession(BedrockClientSession bedrockSession) {
-                        initializeSession(bedrockSession, username, options, host, port, false, null, null);
+                        initializeSession(bedrockSession, username, options, host, port, false, null, loginHelper);
                     }
                 })
                 .option(RakChannelOption.RAK_PROTOCOL_VERSION, 11)
@@ -406,21 +429,33 @@ public class BedrockEditionBotSession extends BotSession {
     }
 
     private void connectNetherNet(String host, int port, String username, BotOptions options,
-            boolean lanDiscovery) {
+            boolean lanDiscovery, BedrockAuthSession auth) {
         NioEventLoopGroup group = new NioEventLoopGroup();
         this.eventLoopGroup = group;
 
-        KeyPair keyPair = EncryptionUtils.createKeyPair();
-        BedrockLoginHelper loginHelper = new BedrockLoginHelper(
-                null, username, options.version(), host + ":" + port,
-                resolveOfflineIdentity(username), keyPair);
-        OperatorIdentity identity = OperatorIdentity.fromToken(
-                keyPair, loginHelper.identityToken(), "MinterMC");
+        KeyPair keyPair;
+        BedrockLoginHelper loginHelper;
+        OperatorIdentity identity;
+        if (auth != null) {
+            keyPair = auth.keyPair();
+            loginHelper = BedrockLoginHelper.forMicrosoft(
+                    null, auth, options.version(), host + ":" + port);
+            identity = OperatorIdentity.fromToken(
+                    keyPair, auth.multiplayerToken(), auth.issuer());
+        } else {
+            keyPair = EncryptionUtils.createKeyPair();
+            loginHelper = new BedrockLoginHelper(
+                    null, username, options.version(), host + ":" + port,
+                    resolveOfflineIdentity(username), keyPair);
+            identity = OperatorIdentity.fromToken(
+                    keyPair, loginHelper.identityToken(), "MinterMC");
+        }
 
+        BedrockLoginHelper finalLoginHelper = loginHelper;
         ChannelFuture future = BedrockNetherNetConnector.connect(group, host, port, identity, lanDiscovery,
                 bedrockSession -> {
-                    loginHelper.setSession(bedrockSession);
-                    initializeSession(bedrockSession, username, options, host, port, true, keyPair, loginHelper);
+                    finalLoginHelper.setSession(bedrockSession);
+                    initializeSession(bedrockSession, username, options, host, port, true, keyPair, finalLoginHelper);
                 });
 
         if (!future.isSuccess()) {

@@ -31,6 +31,7 @@ Python、C++、JavaScript、Java のサンプルがあります。
 
 - **Protocol Abstraction** — Java Edition と Bedrock Edition のボットを単一の API で操作
 - **Chat and Events** — 双方向 `EventStream` RPC でチャット送信とサーバーイベントの受信が可能
+- **Authentication Modes** — オフライン ID または自分の Microsoft アカウント（デバイスコード）
 - **Block Access** — 読み込み済みワールドのブロック名と通過可否を取得
 - **Movement** — サーバー権威の移動で指定座標まで歩行
 - **Language Agnostic** — gRPC クライアントがあれば任意の言語から操作可能（Python、TypeScript、Go など）
@@ -64,6 +65,17 @@ cd MinterMC
 
 任意の gRPC クライアントから、次のサービス定義を使って接続します。  
 [`mintermc-protocol/src/main/proto/bot_service.proto`](mintermc-protocol/src/main/proto/bot_service.proto)
+
+### 認証
+
+既定はオフライン ID です。Microsoft アカウントを使う場合は、`LoginRequest` の
+`auth_mode` を `AUTH_MICROSOFT` にし、`account` に安定したローカル名を指定します。
+初回はカーネルのログにデバイスコードの URL とコードが表示され、以降は保存済みの
+リフレッシュトークンを再利用します。
+
+トークンキャッシュは `MINTER_AUTH_DIR`（既定は `~/.mintermc/accounts`）に保存されます。
+リフレッシュトークンを含むため、リポジトリに置かず、ログや第三者と共有しないでください。
+Microsoft モードは実験的です。自分の管理下のサーバーで検証してください。
 
 ### Plugin Development
 
@@ -105,9 +117,11 @@ MinterMC は独立したプロジェクトであり、Minecraft のゲームコ�
 OR MICROSOFT.**
 
 MinterMC は、自分が所有するサーバー、または自動化が許可されているサーバーでのみ
-使用してください。オフラインモードのサーバーに独自の ID で接続するものであり、
-Xbox Live 認証は行わず、オンラインモードのサーバーには接続できません。プレイヤー
-のなりすまし、認証の回避、許可のないサーバーへのアクセスには使用しないでください。
+使用してください。オフラインモード向けのオフライン ID と、オンラインモード向けの
+Microsoft アカウントサインインに対応しています。オンラインモードは公式の
+デバイスコードフローで自分のアカウントにサインインするもので、認証を回避しません。
+プレイヤーのなりすまし、アカウントの共有、許可のないサーバーへのアクセスには
+使用しないでください。
 
 ボットの利用が第三者のサーバーのルールに違反する場合があります。Bedrock
 Dedicated Server は Mojang からダウンロードしてください。サーバーバイナリや

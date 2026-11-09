@@ -2,15 +2,13 @@ package net.mcsmash.mintermc.adapter.java;
 
 import java.util.concurrent.CompletableFuture;
 
-import net.lenni0451.commons.httpclient.HttpClient;
 import net.mcsmash.mintermc.api.block.Block;
 import net.mcsmash.mintermc.api.bot.BotOptions;
 import net.mcsmash.mintermc.api.math.Location;
 import net.mcsmash.mintermc.api.math.Vector3;
+import net.mcsmash.mintermc.auth.JavaAuthSession;
+import net.mcsmash.mintermc.auth.MicrosoftAuthService;
 import net.mcsmash.mintermc.core.BotSession;
-import net.raphimc.minecraftauth.MinecraftAuth;
-import net.raphimc.minecraftauth.step.java.session.StepFullJavaSession;
-import net.raphimc.minecraftauth.step.msa.StepMsaDeviceCode;
 
 import org.geysermc.mcprotocollib.auth.GameProfile;
 import org.geysermc.mcprotocollib.auth.SessionService;
@@ -72,29 +70,22 @@ public class JavaEditionBotSession extends BotSession {
 
     // Connection methods
     public void connect(String host, int port, String username, boolean onlineMode,
-            BotOptions options) {
+            BotOptions options, MicrosoftAuthService authService) {
         MinecraftProtocol protocol;
 
-        // Online mode authentication
         if (onlineMode) {
-            // TODO: Implement online mode authentication
+            if (authService == null) {
+                throw new IllegalStateException("Microsoft authentication is not configured");
+            }
             try {
-                HttpClient httpClient = MinecraftAuth.createHttpClient();
-                StepFullJavaSession.FullJavaSession fullJavaSession = MinecraftAuth.JAVA_DEVICE_CODE_LOGIN.getFromInput(
-                        httpClient,
-                        new StepMsaDeviceCode.MsaDeviceCodeCallback(msaCode -> {
-                            logger.info("Authorise your Microsoft account at: {}", msaCode.getDirectVerificationUri());
-                            logger.info("Waiting for authentication...");
-                        }));
-                logger.info("Authenticated as {}", fullJavaSession.getMcProfile().getName());
-                GameProfile gameProfile = new GameProfile(fullJavaSession.getMcProfile().getId(),
-                        fullJavaSession.getMcProfile().getName());
-                protocol = new MinecraftProtocol(gameProfile,
-                        fullJavaSession.getMcProfile().getMcToken().getAccessToken());
+                JavaAuthSession auth = authService.loginJava(options.account());
+                username = auth.name();
+                logger.info("Authenticated as {} ({})", auth.name(), auth.uuid());
+                protocol = new MinecraftProtocol(
+                        new GameProfile(auth.uuid(), auth.name()), auth.accessToken());
             } catch (Exception e) {
-                logger.error("Failed to authenticate", e);
-                logger.warn("Continuing in offline mode");
-                protocol = new MinecraftProtocol(username);
+                throw new IllegalStateException(
+                        "Microsoft sign-in failed: " + e.getMessage(), e);
             }
         } else {
             protocol = new MinecraftProtocol(username);

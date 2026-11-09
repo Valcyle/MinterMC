@@ -31,6 +31,7 @@ Check out [`examples`](examples/) folder for more examples.
 
 - **Protocol Abstraction** — Control Java Edition and Bedrock Edition bots through a single unified API
 - **Chat and Events** — Send chat and receive server events over the bidirectional `EventStream` RPC
+- **Authentication Modes** — Offline identities or your own Microsoft account (device code)
 - **Block Access** — Read block identifiers and passability from the loaded world
 - **Movement** — Walk bots to coordinates with server-authoritative movement
 - **Language Agnostic** — Any language with a gRPC client can control bots (Python, TypeScript, Go, etc.)
@@ -64,6 +65,18 @@ cd MinterMC
 
 Connect to the server using any gRPC client with the service definition in:  
 [`mintermc-protocol/src/main/proto/bot_service.proto`](mintermc-protocol/src/main/proto/bot_service.proto)
+
+### Authentication
+
+Offline identities are the default. To use a Microsoft account, set
+`auth_mode` to `AUTH_MICROSOFT` and pass a stable `account` name in
+`LoginRequest`. The first sign-in prints a device-code URL and code to the
+kernel log; later sign-ins reuse the cached refresh token.
+
+The token cache is written to `MINTER_AUTH_DIR` (default
+`~/.mintermc/accounts`). It contains refresh tokens: keep it out of the
+repository and do not log or share it. Microsoft mode is experimental; test it
+on a server you control before relying on it.
 
 ### Plugin Development
 
@@ -105,10 +118,11 @@ assets.
 OR MICROSOFT.**
 
 Use MinterMC only on servers you own or where the operator permits automation.
-It connects to offline-mode servers with its own identity; it does not
-authenticate with Xbox Live and cannot join online-mode servers. Do not use it
-to impersonate players, bypass authentication, or access servers without
-permission.
+It supports offline identities for offline-mode servers and Microsoft account
+sign-in for online-mode servers. Online mode signs in with your own account
+through the official Microsoft device code flow and does not bypass
+authentication. Do not use it to impersonate players, share accounts, or access
+servers without permission.
 
 Bots may violate the rules of third-party servers. Download the Bedrock
 Dedicated Server from Mojang; do not redistribute the server binary or its

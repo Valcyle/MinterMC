@@ -1,8 +1,11 @@
 package net.mcsmash.mintermc.adapter.bedrock.network;
 
+import net.mcsmash.mintermc.auth.BedrockAuthSession;
 import org.cloudburstmc.protocol.bedrock.BedrockClientSession;
 import org.cloudburstmc.protocol.bedrock.codec.v2225.Bedrock_v2225;
+import org.cloudburstmc.protocol.bedrock.data.auth.AuthPayload;
 import org.cloudburstmc.protocol.bedrock.data.auth.AuthType;
+import org.cloudburstmc.protocol.bedrock.data.auth.CertificateChainPayload;
 import org.cloudburstmc.protocol.bedrock.data.auth.TokenPayload;
 import org.cloudburstmc.protocol.bedrock.packet.ClientToServerHandshakePacket;
 import org.cloudburstmc.protocol.bedrock.packet.LoginPacket;
@@ -51,8 +54,11 @@ public class BedrockLoginHelper {
      * expects client chat packets to carry this value; a packet with an empty
      * XUID is accepted but never relayed to other players.
      */
-    private final String xuid = Long.toUnsignedString(
+    private String xuid = Long.toUnsignedString(
             java.util.concurrent.ThreadLocalRandom.current().nextLong(1, Long.MAX_VALUE));
+
+    /** Full-auth certificate chain, or {@code null} for an offline login. */
+    private List<String> certificateChain;
 
     /**
      * MinterMC's own generated classic skin.
@@ -112,15 +118,34 @@ public class BedrockLoginHelper {
     }
 
     /**
-     * Logs in using a self-signed identity token and sends the login packet.
-     * <br>
-     * Protocol 944 and later use the OIDC-style {@link TokenPayload}; the token is
-     * signed by the bot's own key and contains the client public key in {@code cpk}.
+     * Creates a login helper backed by a Microsoft account.
+     *
+     * @param session       the Bedrock client session, or {@code null} before it exists
+     * @param auth          the Microsoft credentials
+     * @param gameVersion   the client game version sent in the client data
+     * @param serverAddress the target address in {@code host:port} form
+     * @return a helper that sends the full certificate chain
      */
-    public void handleOfflineLogin() {
+    public static BedrockLoginHelper forMicrosoft(BedrockClientSession session,
+            BedrockAuthSession auth, String gameVersion, String serverAddress) {
+        BedrockLoginHelper helper = new BedrockLoginHelper(session, auth.displayName(),
+                gameVersion, serverAddress, auth.identity(), auth.keyPair());
+        helper.certificateChain = List.of(auth.mojangJwt(), auth.identityJwt());
+        helper.xuid = auth.xuid();
+        return helper;
+    }
+
+    /**
+     * Sends the Bedrock login packet.
+     * <br>
+     * Offline mode uses the OIDC-style {@link TokenPayload} signed by the bot's
+     * own key. Microsoft mode sends the full Mojang certificate chain.
+     */
+    public void handleLogin() {
         try {
             session.sendPacketImmediately(buildLoginPacket());
-            logger.info("Sent Bedrock offline login packet for {}", username);
+            logger.info("Sent Bedrock {} login packet for {}",
+                    certificateChain != null ? "Microsoft" : "offline", username);
         } catch (Exception e) {
             logger.error("Failed to create Bedrock login packet for {}", username, e);
             session.disconnect("Login failed: " + e.getMessage());
@@ -128,7 +153,7 @@ public class BedrockLoginHelper {
     }
 
     /**
-     * Builds the offline login packet without sending it.
+     * Builds the login packet without sending it.
      * <br>
      * Exposed separately so the token contents can be validated without a
      * network connection.
@@ -140,7 +165,10 @@ public class BedrockLoginHelper {
         String publicKey = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
         LoginPacket loginPacket = new LoginPacket();
         loginPacket.setProtocolVersion(Bedrock_v2225.CODEC.getProtocolVersion());
-        loginPacket.setAuthPayload(new TokenPayload(identityToken(), AuthType.SELF_SIGNED));
+        AuthPayload payload = certificateChain != null
+                ? new CertificateChainPayload(certificateChain, AuthType.FULL)
+                : new TokenPayload(identityToken(), AuthType.SELF_SIGNED);
+        loginPacket.setAuthPayload(payload);
         loginPacket.setClientJwt(createClientDataToken(publicKey));
         return loginPacket;
     }

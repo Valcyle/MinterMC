@@ -4,6 +4,7 @@ plugins {
 
 dependencies {
     implementation(project(":mintermc-core"))
+    implementation(project(":mintermc-auth"))
     
     // Cloudburst Protocol (BE)
     implementation("org.cloudburstmc.protocol:bedrock-connection:3.0.0.Beta15-SNAPSHOT")

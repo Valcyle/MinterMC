@@ -34,12 +34,21 @@ enum EditionType {
     BEDROCK_EDITION = 1;
 }
 
+// How the bot proves its identity to the server.
+enum AuthMode {
+    // Self-signed offline identity. Only offline-mode servers accept it.
+    AUTH_OFFLINE = 0;
+    // Microsoft account sign-in through the device code flow.
+    AUTH_MICROSOFT = 1;
+}
+
 message LoginRequest {
     string bot_name = 1; // Player name or UUID
     EditionType target_edition = 2; // JE or BE
     string host = 3; // Target server address
     int32 port = 4; // Target server port
-    // TODO: Add actual MS account authentication tokens, etc.
+    AuthMode auth_mode = 5; // Offline identity or Microsoft account
+    string account = 6; // Local name for the Microsoft token cache (e.g. "main")
 }
 
 message LoginResponse {

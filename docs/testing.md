@@ -189,7 +189,53 @@ forwarded to other players.
 
 ---
 
-## 7. Blocks
+## 7. Authentication
+
+Bedrock and Java bots support two authentication modes.
+
+| Mode | `auth_mode` | Server requirement |
+|---|---|---|
+| Offline identity | `AUTH_OFFLINE` (default) | `online-mode=false` |
+| Microsoft account | `AUTH_MICROSOFT` | Online mode, with your own account |
+
+For Microsoft mode, set `auth_mode` to `AUTH_MICROSOFT` and pass a stable
+`account` name in `LoginRequest`. The first sign-in prints a device-code URL and
+code in the kernel log. Open the URL in a browser, enter the code, and wait for
+the login call to finish. Later logins reuse the cached refresh token.
+
+The cache is written to `MINTER_AUTH_DIR` (default `~/.mintermc/accounts`). It
+contains refresh tokens: do not commit it, log it, or share it. The Microsoft
+mode signs in with the account owner's own credentials through the official
+device code flow and does not bypass authentication. Use it only with accounts
+you own and on servers where automation is permitted.
+
+Use a distinct account for every bot that connects at the same time. Servers
+reject or replace a second session that uses the same account.
+
+```powershell
+# The cache directory can be moved outside the home directory.
+$env:MINTER_AUTH_DIR = "D:\mintermc-accounts"
+```
+
+Example with the Python client:
+
+```python
+response = stub.Login(bot_service_pb2.LoginRequest(
+    bot_name="TestBot",
+    target_edition=1,
+    host="127.0.0.1",
+    port=19132,
+    auth_mode=bot_service_pb2.AUTH_MICROSOFT,
+    account="main",
+))
+```
+
+The Python stubs in `examples/python` may need regeneration to expose the new
+fields; see section 2.
+
+---
+
+## 8. Blocks
 
 `GetBlock` returns the block at the given coordinates.
 
@@ -207,7 +253,7 @@ are reported as `minecraft:air`.
 
 ---
 
-## 8. Movement
+## 9. Movement
 
 `MoveTo` walks the bot to a position. Bedrock uses server-authoritative
 movement: the bot reports local input and its predicted position every tick,
@@ -232,7 +278,7 @@ with block queries in a plugin for navigation.
 
 ---
 
-## 9. Cleanup
+## 10. Cleanup
 
 - Stop `gradlew :mintermc-server:run` with `Ctrl+C`.
 - If you started a test server, stop the process and restore its configuration.
