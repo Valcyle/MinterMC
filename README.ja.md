@@ -22,8 +22,8 @@
 # DEMO
 [<img src="https://img.youtube.com/vi/8_sQTFVja0g/0.jpg" alt="1500 bots joining using MinterMC" width="200">](https://www.youtube.com/watch?v=8_sQTFVja0g)
 
-現在は Java Edition と Bedrock Edition のオフラインサーバーへの接続に対応しています。
-Bedrock 対応は現在も開発中です。
+Java Edition と Bedrock Edition のサーバー接続に対応しています。オフライン ID と
+Microsoft アカウントのどちらでも接続できます。Bedrock 対応は現在も開発中です。
 Python、C++、JavaScript、Java のサンプルがあります。
 その他の例は [`examples`](examples/) フォルダを参照してください。
 

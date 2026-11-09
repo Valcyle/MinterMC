@@ -22,8 +22,8 @@ Exposes a single **gRPC API** so bots can be controlled from any programming lan
 # DEMO
 [<img src="https://img.youtube.com/vi/8_sQTFVja0g/0.jpg" alt="1500 bots joining using MinterMC" width="200">](https://www.youtube.com/watch?v=8_sQTFVja0g)
 
-Currently, joining Java Edition and Bedrock Edition offline servers is supported.
-Bedrock support is under active development.
+Joining Java Edition and Bedrock Edition servers is supported, with offline
+identities or a Microsoft account. Bedrock support is under active development.
 Python, C++, JavaScript and Java examples are available.
 Check out [`examples`](examples/) folder for more examples.
 
