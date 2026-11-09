@@ -199,9 +199,10 @@ Bedrock and Java bots support two authentication modes.
 | Microsoft account | `AUTH_MICROSOFT` | Online mode, with your own account |
 
 For Microsoft mode, set `auth_mode` to `AUTH_MICROSOFT` and pass a stable
-`account` name in `LoginRequest`. The first sign-in prints a device-code URL and
-code in the kernel log. Open the URL in a browser, enter the code, and wait for
-the login call to finish. Later logins reuse the cached refresh token.
+`account` name in `LoginRequest`. The account's gamertag replaces `bot_name` as
+the in-game name. The first sign-in prints a device-code URL and code in the
+kernel log. Open the URL in a browser, enter the code, and wait for the login
+call to finish. Later logins reuse the cached refresh token.
 
 The cache is written to `MINTER_AUTH_DIR` (default `~/.mintermc/accounts`). It
 contains refresh tokens: do not commit it, log it, or share it. The Microsoft
