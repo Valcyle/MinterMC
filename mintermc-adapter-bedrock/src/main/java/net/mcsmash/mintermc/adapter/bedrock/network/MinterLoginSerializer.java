@@ -21,6 +21,17 @@ public class MinterLoginSerializer extends LoginSerializer_v818 {
 
     @Override
     protected String writeAuthJwt(AuthPayload payload) {
+        if (payload instanceof MicrosoftAuthPayload microsoftPayload) {
+            Map<String, Object> certificate = new LinkedHashMap<>();
+            certificate.put("chain", microsoftPayload.getChain());
+
+            Map<String, Object> auth = new LinkedHashMap<>();
+            auth.put("Certificate", JsonUtil.toJson(certificate));
+            auth.put("AuthenticationType", payload.getAuthType().ordinal() - 1);
+            auth.put("Token", microsoftPayload.token());
+            return JsonUtil.toJson(auth);
+        }
+
         if (payload instanceof TokenPayload tokenPayload) {
             Map<String, Object> certificate = new LinkedHashMap<>();
             certificate.put("chain", List.of(""));

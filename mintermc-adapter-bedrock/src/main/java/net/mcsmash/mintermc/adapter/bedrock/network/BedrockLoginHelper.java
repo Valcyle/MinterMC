@@ -59,6 +59,10 @@ public class BedrockLoginHelper {
 
     /** Full-auth certificate chain, or {@code null} for an offline login. */
     private List<String> certificateChain;
+    /** OIDC multiplayer token used as the login Token field. */
+    private String multiplayerToken;
+    /** PlayFab ID from the multiplayer token, used in the client data. */
+    private String playFabId;
 
     /**
      * MinterMC's own generated classic skin.
@@ -131,6 +135,8 @@ public class BedrockLoginHelper {
         BedrockLoginHelper helper = new BedrockLoginHelper(session, auth.displayName(),
                 gameVersion, serverAddress, auth.identity(), auth.keyPair());
         helper.certificateChain = List.of(auth.mojangJwt(), auth.identityJwt());
+        helper.multiplayerToken = auth.multiplayerToken();
+        helper.playFabId = auth.playFabId();
         helper.xuid = auth.xuid();
         return helper;
     }
@@ -165,12 +171,41 @@ public class BedrockLoginHelper {
         String publicKey = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
         LoginPacket loginPacket = new LoginPacket();
         loginPacket.setProtocolVersion(Bedrock_v2225.CODEC.getProtocolVersion());
-        AuthPayload payload = certificateChain != null
-                ? new CertificateChainPayload(certificateChain, AuthType.FULL)
-                : new TokenPayload(identityToken(), AuthType.SELF_SIGNED);
+        AuthPayload payload;
+        if (certificateChain != null) {
+            List<String> chain = new java.util.ArrayList<>(certificateChain.size() + 1);
+            chain.add(createCertificateAuthorityToken(publicKey));
+            chain.addAll(certificateChain);
+            payload = new MicrosoftAuthPayload(chain, multiplayerToken);
+        } else {
+            payload = new TokenPayload(identityToken(), AuthType.SELF_SIGNED);
+        }
         loginPacket.setAuthPayload(payload);
         loginPacket.setClientJwt(createClientDataToken(publicKey));
         return loginPacket;
+    }
+
+    /**
+     * Builds the self-signed certificate-authority token that current Bedrock
+     * clients prepend to the Mojang certificate chain.
+     *
+     * @param publicKey the base64 client public key
+     * @return a compact ES384 JWT
+     * @throws Exception if the token cannot be signed
+     */
+    private String createCertificateAuthorityToken(String publicKey) throws Exception {
+        JwtClaims claims = new JwtClaims();
+        claims.setExpirationTimeMinutesInTheFuture(360);
+        claims.setNotBeforeMinutesInThePast(360);
+        claims.setClaim("identityPublicKey", publicKey);
+        claims.setClaim("certificateAuthority", true);
+
+        JsonWebSignature signature = new JsonWebSignature();
+        signature.setAlgorithmHeaderValue(EncryptionUtils.ALGORITHM_TYPE);
+        signature.setHeader(HeaderParameterNames.X509_URL, publicKey);
+        signature.setKey(keyPair.getPrivate());
+        signature.setPayload(claims.toJson());
+        return signature.getCompactSerialization();
     }
 
     /**
@@ -293,7 +328,7 @@ public class BedrockLoginHelper {
         data.put("ThirdPartyName", username);
         data.put("LanguageCode", "en_US");
 
-        data.put("PlayFabId", randomPlayFabId());
+        data.put("PlayFabId", playFabIdForLogin());
         data.put("DeviceId", UUID.randomUUID().toString());
         data.put("DeviceModel", "MinterMC");
         data.put("DeviceOS", 12); // BDS rejects Windows (7) during login; use the retail Switch value
@@ -363,6 +398,13 @@ public class BedrockLoginHelper {
 
     private static String encodeUtf8(String value) {
         return Base64.getEncoder().encodeToString(value.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private String playFabIdForLogin() {
+        if (playFabId != null && playFabId.matches("[0-9a-fA-F]+")) {
+            return playFabId;
+        }
+        return randomPlayFabId();
     }
 
     private static String randomPlayFabId() {

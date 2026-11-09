@@ -103,15 +103,19 @@ class BedrockLoginHelperTest {
         BedrockAuthSession auth = new BedrockAuthSession(
                 "TestBot", "1234567890", UUID.randomUUID(), keyPair,
                 "mojang.jwt", "identity.jwt", "multiplayer.jwt",
-                "https://authorization.franchise.minecraft-services.net");
+                "https://authorization.franchise.minecraft-services.net",
+                "0123456789abcdef");
 
         BedrockLoginHelper helper = BedrockLoginHelper.forMicrosoft(
                 null, auth, "1.26.60", "127.0.0.1:19132");
         LoginPacket packet = helper.buildLoginPacket();
 
         assertTrue(packet.getAuthPayload() instanceof CertificateChainPayload);
-        CertificateChainPayload payload = (CertificateChainPayload) packet.getAuthPayload();
-        assertEquals(List.of("mojang.jwt", "identity.jwt"), payload.getChain());
+        MicrosoftAuthPayload payload = (MicrosoftAuthPayload) packet.getAuthPayload();
+        assertEquals(3, payload.getChain().size());
+        assertEquals("mojang.jwt", payload.getChain().get(1));
+        assertEquals("identity.jwt", payload.getChain().get(2));
+        assertEquals("multiplayer.jwt", payload.token());
         assertEquals("1234567890", helper.xuid());
 
         BedrockCodec codec = Bedrock_v2225.CODEC.toBuilder()
@@ -129,13 +133,22 @@ class BedrockLoginHelperTest {
             int authLength = tokens.readIntLE();
             String authJson = tokens.readCharSequence(authLength, StandardCharsets.UTF_8).toString();
             int clientLength = tokens.readIntLE();
-            tokens.readCharSequence(clientLength, StandardCharsets.UTF_8);
+            String clientJson = tokens.readCharSequence(clientLength, StandardCharsets.UTF_8).toString();
             assertEquals(0, tokens.readableBytes(), "tokens must be fully consumed");
 
             Map<String, Object> parsed = JsonUtil.parseJson(authJson);
             assertEquals(0, ((Number) parsed.get("AuthenticationType")).intValue());
+            assertEquals("multiplayer.jwt", parsed.get("Token"));
             Map<String, Object> certificate = JsonUtil.parseJson((String) parsed.get("Certificate"));
-            assertEquals(List.of("mojang.jwt", "identity.jwt"), certificate.get("chain"));
+            List<?> chain = (List<?>) certificate.get("chain");
+            assertEquals(3, chain.size());
+            assertEquals("mojang.jwt", chain.get(1));
+            assertEquals("identity.jwt", chain.get(2));
+
+            JsonWebSignature clientToken = new JsonWebSignature();
+            clientToken.setCompactSerialization(clientJson);
+            Map<String, Object> clientData = JsonUtil.parseJson(clientToken.getUnverifiedPayload());
+            assertEquals("0123456789abcdef", clientData.get("PlayFabId"));
         } finally {
             buffer.release();
         }

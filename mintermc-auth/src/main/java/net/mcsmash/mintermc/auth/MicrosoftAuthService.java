@@ -135,6 +135,7 @@ public final class MicrosoftAuthService implements AutoCloseable {
             MinecraftMultiplayerToken multiplayer =
                     manager.getMinecraftMultiplayerToken().getUpToDate();
             String issuer = multiplayer.getParsedToken().getPayload().reqString("iss");
+            String playFabId = multiplayer.getParsedToken().getPayload().reqString("mid");
 
             return new BedrockAuthSession(
                     chain.getIdentityDisplayName(),
@@ -144,7 +145,8 @@ public final class MicrosoftAuthService implements AutoCloseable {
                     chain.getMojangJwt(),
                     chain.getIdentityJwt(),
                     multiplayer.getToken(),
-                    issuer);
+                    issuer,
+                    playFabId);
         }
     }
 

@@ -14,6 +14,7 @@ import java.util.UUID;
  * @param identityJwt      the client-signed certificate chain entry
  * @param multiplayerToken the token used for the NetherNet identity assertion
  * @param issuer           the issuer domain of {@code multiplayerToken}
+ * @param playFabId        the PlayFab ID from {@code multiplayerToken}
  */
 public record BedrockAuthSession(
         String displayName,
@@ -23,5 +24,6 @@ public record BedrockAuthSession(
         String mojangJwt,
         String identityJwt,
         String multiplayerToken,
-        String issuer) {
+        String issuer,
+        String playFabId) {
 }
