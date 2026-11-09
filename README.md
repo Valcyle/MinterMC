@@ -15,6 +15,10 @@ Use any programming language to create Minecraft bots.
 A universal Minecraft bot kernel that abstracts the differences between **Java Edition** and **Bedrock Edition**.  
 Exposes a single **gRPC API** so bots can be controlled from any programming language via an SDK.
 
+> [!IMPORTANT]
+> **NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.**  
+> MinterMC is an independent project and contains no Minecraft game code or assets.
+
 # DEMO
 [<img src="https://img.youtube.com/vi/8_sQTFVja0g/0.jpg" alt="1500 bots joining using MinterMC" width="200">](https://www.youtube.com/watch?v=8_sQTFVja0g)
 
@@ -91,6 +95,24 @@ This project is currently in early development. The gRPC server and plugin syste
 > [!NOTE] 
 > MinterMC uses [MCProtocolLib](https://github.com/GeyserMC/MCProtocolLib) for Java Edition adapter implementation.
 > MinterMC uses [Protocol](https://github.com/CloudburstMC/Protocol) for Bedrock Edition adapter implementation.
+
+# Usage notice
+
+MinterMC is an independent project. It contains no Minecraft game code or game
+assets.
+
+**NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG
+OR MICROSOFT.**
+
+Use MinterMC only on servers you own or where the operator permits automation.
+It connects to offline-mode servers with its own identity; it does not
+authenticate with Xbox Live and cannot join online-mode servers. Do not use it
+to impersonate players, bypass authentication, or access servers without
+permission.
+
+Bots may violate the rules of third-party servers. Download the Bedrock
+Dedicated Server from Mojang; do not redistribute the server binary or its
+world data.
 
 # Author
 

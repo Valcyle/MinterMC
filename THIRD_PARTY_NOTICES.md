@@ -35,7 +35,8 @@ license, and required attribution.
 | SLF4J | 2.0.x | MIT |
 
 libdatachannel is used as an unmodified native library. Its source is available
-from https://github.com/paullouisageneau/libdatachannel.
+from https://github.com/paullouisageneau/libdatachannel, and the MPL-2.0 text
+is available at https://www.mozilla.org/en-US/MPL/2.0/.
 
 ## MIT License
 

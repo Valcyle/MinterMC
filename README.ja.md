@@ -15,6 +15,10 @@
 **Java Edition** と **Bedrock Edition** の違いを抽象化する、汎用 Minecraft ボットカーネルです。  
 単一の **gRPC API** を公開するため、任意の言語から SDK 経由でボットを操作できます。
 
+> [!IMPORTANT]
+> **NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.**  
+> MinterMC は独立したプロジェクトであり、Minecraft のゲームコードやゲームアセットを含みません。
+
 # DEMO
 [<img src="https://img.youtube.com/vi/8_sQTFVja0g/0.jpg" alt="1500 bots joining using MinterMC" width="200">](https://www.youtube.com/watch?v=8_sQTFVja0g)
 
@@ -91,6 +95,23 @@ public class MyPlugin implements MinterPlugin {
 > [!NOTE] 
 > MinterMC は Java Edition アダプタに [MCProtocolLib](https://github.com/GeyserMC/MCProtocolLib) を使用しています。
 > MinterMC は Bedrock Edition アダプタに [Protocol](https://github.com/CloudburstMC/Protocol) を使用しています。
+
+# 利用上の注意
+
+MinterMC は独立したプロジェクトであり、Minecraft のゲームコードやゲームアセットを
+含みません。
+
+**NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG
+OR MICROSOFT.**
+
+MinterMC は、自分が所有するサーバー、または自動化が許可されているサーバーでのみ
+使用してください。オフラインモードのサーバーに独自の ID で接続するものであり、
+Xbox Live 認証は行わず、オンラインモードのサーバーには接続できません。プレイヤー
+のなりすまし、認証の回避、許可のないサーバーへのアクセスには使用しないでください。
+
+ボットの利用が第三者のサーバーのルールに違反する場合があります。Bedrock
+Dedicated Server は Mojang からダウンロードしてください。サーバーバイナリや
+ワールドデータを再配布しないでください。
 
 # Author
 

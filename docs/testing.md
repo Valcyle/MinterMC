@@ -106,7 +106,11 @@ If `position` stays at `(0.00, 0.00, 0.00)`, the bot has not joined yet. World c
 
 ### Official Bedrock Dedicated Server
 
-The official BDS requires `online-mode=false` and `transport=nethernet` for offline bots. Use a dedicated test server and restore its configuration after testing.
+The official BDS requires `online-mode=false` and `transport=nethernet` for offline bots. Download the server from Mojang and follow its license; do not redistribute the server binary or its world data. Use a dedicated test server and restore its configuration after testing.
+
+Run these tests only on servers you own or are authorized to use. The Minecraft
+EULA permits independent tools, but individual server rules may prohibit bots
+and automation.
 
 ```properties
 online-mode=false
