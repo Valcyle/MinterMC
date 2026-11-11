@@ -63,7 +63,7 @@ Bedrock supports joining, spawning, chat, block queries and movement. Java
 Edition currently supports joining and status; movement, block access and chat
 are follow-up work.
 
-# Installation
+# Build from source
 
 ```bash
 git clone https://github.com/Valcyle/MinterMC.git
@@ -71,7 +71,36 @@ cd MinterMC
 ./gradlew build
 ```
 
+# Run a release
+
+The release zip is universal: it contains the Linux/macOS and Windows start
+scripts and the native libraries for Windows, macOS and Linux.
+
+1. Install Java 21 or newer (`java -version`).
+2. Download `mintermc-server-0.1.0.zip` from the Releases page and extract it.
+3. Start the kernel from the extracted directory.
+
+Windows:
+
+```powershell
+.\bin\mintermc-server.bat
+```
+
+Linux or macOS:
+
+```bash
+./bin/mintermc-server
+```
+
+4. The gRPC server listens on `127.0.0.1:50051` by default. Connect with any
+   gRPC client using the service definition in
+   `mintermc-protocol/src/main/proto/bot_service.proto`; the bundled
+   [docs/testing.md](docs/testing.md) contains examples.
+5. Create a `plugins/` directory in the extracted directory to load plugin JARs.
+
 # Usage
+
+The commands below assume a source checkout.
 
 ```bash
 # Start the gRPC server (default port: 50051)

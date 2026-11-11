@@ -6,10 +6,15 @@ This guide describes how to connect MinterMC to a Minecraft server.
 
 ## 1. Start the MinterMC server
 
+From a source checkout:
+
 ```powershell
 cd path\to\MinterMC
 .\gradlew :mintermc-server:run
 ```
+
+From a release zip, extract it and run `bin/mintermc-server`
+(`bin\mintermc-server.bat` on Windows) from the extracted directory instead.
 
 The server is ready when the log contains
 `MinterMC gRPC Server started on 127.0.0.1:50051 (token auth disabled)`.

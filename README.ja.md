@@ -63,7 +63,7 @@ Bedrock は接続・スポーン・チャット・ブロック参照・移動に
 Java Edition は現時点では接続とステータス取得までで、移動・ブロック・チャットは
 今後の対応です。
 
-# Installation
+# ソースからビルド
 
 ```bash
 git clone https://github.com/Valcyle/MinterMC.git
@@ -71,7 +71,36 @@ cd MinterMC
 ./gradlew build
 ```
 
+# リリース版を実行
+
+リリース zip は universal 版です。Linux/macOS 用と Windows 用の起動スクリプト、
+および Windows・macOS・Linux 向けの native ライブラリを含みます。
+
+1. Java 21 以上をインストールします（`java -version`）。
+2. Releases から `mintermc-server-0.1.0.zip` をダウンロードして展開します。
+3. 展開したディレクトリでカーネルを起動します。
+
+Windows:
+
+```powershell
+.\bin\mintermc-server.bat
+```
+
+Linux / macOS:
+
+```bash
+./bin/mintermc-server
+```
+
+4. gRPC サーバーは既定で `127.0.0.1:50051` を待ち受けます。
+   `mintermc-protocol/src/main/proto/bot_service.proto` を使って任意の gRPC
+   クライアントから接続してください。zip に含まれる
+   [docs/testing.md](docs/testing.md) に例があります。
+5. プラグイン JAR を読み込む場合は、展開したディレクトリに `plugins/` を作成します。
+
 # Usage
+
+以下のコマンドはソースチェックアウトを前提としています。
 
 ```bash
 # gRPC サーバーを起動（既定ポート: 50051）
