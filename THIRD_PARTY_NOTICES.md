@@ -34,7 +34,32 @@ license, and required attribution.
 | jose4j | 0.9.6 | Apache-2.0 |
 | Nimbus JOSE + JWT | 10.8 | Apache-2.0 |
 | Netty | 4.1.x | Apache-2.0 |
+| Netty incubator io_uring | 0.0.24.Final | Apache-2.0 |
 | SLF4J | 2.0.x | MIT |
+| Adventure (Kyori) | 4.17.0 | MIT |
+| Examination API / Option (Kyori) | 1.3.0 / 1.0.0 | MIT |
+| NBT (`org.cloudburstmc`) | 3.1.0.Final | Apache-2.0 |
+| Cloudburst/NukkitX fastutil | 8.5.x | Apache-2.0 |
+| NukkitX natives | 1.0.3 | Apache-2.0 |
+| Aircompressor | 2.0.3 | Apache-2.0 |
+| ExpiringMap | 0.5.10 | Apache-2.0 |
+| Guava / FailureAccess / ListenableFuture | 32.1.3 / 1.0.1 / 9999.0 | Apache-2.0 |
+| Protocol Buffers (`protobuf-java`) | 3.25.1 | BSD-3-Clause |
+| Bouncy Castle (`bcprov`, `bcpkix`, `bcutil`) | 1.85 | MIT (Bouncy Castle Licence) |
+| Jackson annotations | 2.18.0 | Apache-2.0 |
+| JSR305 | 3.0.2 | Apache-2.0 |
+| Error Prone annotations | 2.48.0 | Apache-2.0 |
+| PerfMark | 0.26.0 | Apache-2.0 |
+| proto-google-common-protos | 2.29.0 | Apache-2.0 |
+| Animal Sniffer annotations | 1.23 | MIT |
+| Checker Qual | 3.42.0 | MIT |
+| Google Android annotations | 4.1.1.4 | Apache-2.0 |
+
+All third-party JARs are redistributed unmodified; their own `META-INF`
+license and notice files are retained. The full BSD-3-Clause text is in
+`LICENSES/BSD-3-Clause.txt`, the Bouncy Castle notice in
+`LICENSES/Bouncy-Castle.txt`, the MPL-2.0 text in `LICENSES/MPL-2.0.txt`, and
+the LGPL-3.0 text in `LICENSES/LGPL-3.0.txt`.
 
 libdatachannel is used as an unmodified native library. Its source is available
 from https://github.com/paullouisageneau/libdatachannel. The full MPL-2.0 text
@@ -57,6 +82,10 @@ Copyright (C) 2021-2026 GeyserMC
 Copyright (c) PrismarineJS contributors
 Copyright (c) the libdatachannel-java contributors
 Copyright (c) QOS.ch
+Copyright (c) KyoriPowered contributors
+Copyright (c) 2000-2026 The Legion of the Bouncy Castle Inc.
+Copyright (c) Lenni0451 contributors
+Copyright (c) NukkitX and Cloudburst contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
