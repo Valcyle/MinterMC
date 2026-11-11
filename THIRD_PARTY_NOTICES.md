@@ -37,8 +37,8 @@ license, and required attribution.
 | SLF4J | 2.0.x | MIT |
 
 libdatachannel is used as an unmodified native library. Its source is available
-from https://github.com/paullouisageneau/libdatachannel, and the MPL-2.0 text
-is available at https://www.mozilla.org/en-US/MPL/2.0/.
+from https://github.com/paullouisageneau/libdatachannel. The full MPL-2.0 text
+is included in `LICENSES/MPL-2.0.txt`.
 
 ### MinecraftAuth 5.0.2
 
@@ -48,7 +48,7 @@ shaded into MinterMC's own classes. To replace it, substitute a compatible
 MinecraftAuth JAR in the application's `lib` directory.
 
 - Source: https://github.com/RaphiMC/MinecraftAuth
-- License: LGPL-3.0, https://www.gnu.org/licenses/lgpl-3.0.html
+- License: LGPL-3.0; the full text is included in `LICENSES/LGPL-3.0.txt`
 
 ## MIT License
 

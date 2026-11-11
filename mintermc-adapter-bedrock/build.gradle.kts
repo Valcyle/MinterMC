@@ -11,22 +11,37 @@ dependencies {
     implementation("org.cloudburstmc.netty:netty-transport-nethernet:2.0.0.CR6-SNAPSHOT")
     implementation("dev.opencollab:libdatachannel-java:0.24.6.0-20261022.190039-8")
     // libdatachannel ships one native jar per platform and every jar stores the
-    // library at the same class path, so only the host platform may be included.
-    val nativeClassifier = run {
-        val os = System.getProperty("os.name").lowercase()
-        val arch = System.getProperty("os.arch").lowercase()
-        when {
-            os.contains("win") && (arch.contains("aarch64") || arch.contains("arm64")) -> "windows-aarch64"
-            os.contains("win") -> "windows-x86_64"
-            os.contains("mac") && (arch.contains("aarch64") || arch.contains("arm64")) -> "macos-arm64"
-            os.contains("mac") -> "macos-x86_64"
-            os.contains("linux") && (arch.contains("aarch64") || arch.contains("arm64")) -> "linux-glibc-aarch64"
-            os.contains("linux") -> "linux-glibc-x86_64"
-            else -> null
+    // library at the same class path. Normal builds include only the host
+    // platform; -PincludeAllNatives=true builds a universal distribution.
+    val nativeVersion = "0.24.6.0-20261022.190039-8"
+    if (providers.gradleProperty("includeAllNatives").orNull == "true") {
+        listOf(
+            "windows-x86_64",
+            "windows-aarch64",
+            "macos-x86_64",
+            "macos-arm64",
+            "linux-glibc-x86_64",
+            "linux-glibc-aarch64"
+        ).forEach {
+            runtimeOnly("dev.opencollab:libdatachannel-java:$nativeVersion:$it")
         }
-    }
-    if (nativeClassifier != null) {
-        runtimeOnly("dev.opencollab:libdatachannel-java:0.24.6.0-20261022.190039-8:$nativeClassifier")
+    } else {
+        val nativeClassifier = run {
+            val os = System.getProperty("os.name").lowercase()
+            val arch = System.getProperty("os.arch").lowercase()
+            when {
+                os.contains("win") && (arch.contains("aarch64") || arch.contains("arm64")) -> "windows-aarch64"
+                os.contains("win") -> "windows-x86_64"
+                os.contains("mac") && (arch.contains("aarch64") || arch.contains("arm64")) -> "macos-arm64"
+                os.contains("mac") -> "macos-x86_64"
+                os.contains("linux") && (arch.contains("aarch64") || arch.contains("arm64")) -> "linux-glibc-aarch64"
+                os.contains("linux") -> "linux-glibc-x86_64"
+                else -> null
+            }
+        }
+        if (nativeClassifier != null) {
+            runtimeOnly("dev.opencollab:libdatachannel-java:$nativeVersion:$nativeClassifier")
+        }
     }
     implementation("org.bitbucket.b_c:jose4j:0.9.6")
     implementation("com.nimbusds:nimbus-jose-jwt:10.8")

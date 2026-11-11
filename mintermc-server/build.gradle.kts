@@ -8,6 +8,21 @@ application {
     mainClass.set("net.mcsmash.mintermc.server.MinterServer")
 }
 
+distributions {
+    main {
+        contents {
+            from(rootProject.file("LICENSE"))
+            from(rootProject.file("THIRD_PARTY_NOTICES.md"))
+            from(rootProject.file("CHANGELOG.md"))
+            from(rootProject.file("README.md"))
+            from(rootProject.file("README.ja.md"))
+            from(rootProject.file("LICENSES")) {
+                into("LICENSES")
+            }
+        }
+    }
+}
+
 
 dependencies {
     implementation(project(":mintermc-core"))

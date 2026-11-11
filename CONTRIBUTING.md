@@ -40,6 +40,16 @@ Verify that the infrastructure is working on your machine:
 * mintermc-adapter-bedrock: BE protocol implementation (Cloudburst).
 * mintermc-server: The core kernel and session management.
 
+## Release build
+
+```bash
+./gradlew :mintermc-server:distZip -PincludeAllNatives=true
+```
+
+This produces a universal distribution in `mintermc-server/build/distributions/`.
+It includes the Linux, macOS and Windows libdatachannel natives, the license
+texts, the changelog and both READMEs.
+
 ---
 
 ## Coding Standards
