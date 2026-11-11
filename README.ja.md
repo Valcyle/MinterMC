@@ -49,6 +49,20 @@ Bedrock で複数のボットを接続する場合は、サーバー側で
 BDS 1.26.x の単一ポート共有モードでは、同時に接続した NetherNet 接続の一部が
 切断されます。詳細は [docs/testing.md](docs/testing.md) を参照してください。
 
+# 互換性
+
+| 項目 | 対応バージョン |
+|---|---|
+| Bedrock サーバー | BDS 1.26.61、protocol 2225、NetherNet |
+| Bedrock 認証 | オフライン ID または Microsoft アカウント |
+| Java サーバー | 1.21.4、オフラインモード |
+| 実行環境 | Java 21+ |
+| ビルド | JDK 25 |
+
+Bedrock は接続・スポーン・チャット・ブロック参照・移動に対応しています。
+Java Edition は現時点では接続とステータス取得までで、移動・ブロック・チャットは
+今後の対応です。
+
 # Installation
 
 ```bash

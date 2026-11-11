@@ -49,6 +49,20 @@ For multiple Bedrock bots, configure the server with a UDP port range such as
 the single-port mode drops one of several simultaneous NetherNet connections.
 See [docs/testing.md](docs/testing.md) for details.
 
+# Compatibility
+
+| Component | Supported version |
+|---|---|
+| Bedrock server | BDS 1.26.61, protocol 2225, NetherNet |
+| Bedrock authentication | Offline identity or Microsoft account |
+| Java server | 1.21.4, offline mode |
+| Runtime | Java 21+ |
+| Build | JDK 25 |
+
+Bedrock supports joining, spawning, chat, block queries and movement. Java
+Edition currently supports joining and status; movement, block access and chat
+are follow-up work.
+
 # Installation
 
 ```bash
