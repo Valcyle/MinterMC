@@ -41,14 +41,29 @@ Python、C++、JavaScript、Java のサンプルがあります。
 
 # Requirement
 
-- Java 25+
+- Java 21+（実行時）
+- ソースからビルドする場合は JDK 25（生成物は Java 21 ターゲット）
 
 Bedrock で複数のボットを接続する場合は、サーバー側で
 `server-udp-ports=19132-19232` のような UDP ポート範囲を設定してください。
 BDS 1.26.x の単一ポート共有モードでは、同時に接続した NetherNet 接続の一部が
 切断されます。詳細は [docs/testing.md](docs/testing.md) を参照してください。
 
-# Installation
+# 互換性
+
+| 項目 | 対応バージョン |
+|---|---|
+| Bedrock サーバー | BDS 1.26.61、protocol 2225、NetherNet |
+| Bedrock 認証 | オフライン ID または Microsoft アカウント |
+| Java サーバー | 1.21.4、オフラインモード |
+| 実行環境 | Java 21+ |
+| ビルド | JDK 25 |
+
+Bedrock は接続・スポーン・チャット・ブロック参照・移動に対応しています。
+Java Edition は現時点では接続とステータス取得までで、移動・ブロック・チャットは
+今後の対応です。
+
+# ソースからビルド
 
 ```bash
 git clone https://github.com/Valcyle/MinterMC.git
@@ -56,12 +71,46 @@ cd MinterMC
 ./gradlew build
 ```
 
+# リリース版を実行
+
+リリース zip は universal 版です。Linux/macOS 用と Windows 用の起動スクリプト、
+および Windows・macOS・Linux 向けの native ライブラリを含みます。
+
+1. Java 21 以上をインストールします（`java -version`）。
+2. Releases から `mintermc-server-0.1.0.zip` をダウンロードして展開します。
+3. 展開したディレクトリでカーネルを起動します。
+
+Windows:
+
+```powershell
+.\bin\mintermc-server.bat
+```
+
+Linux / macOS:
+
+```bash
+./bin/mintermc-server
+```
+
+4. gRPC サーバーは既定で `127.0.0.1:50051` を待ち受けます。
+   `mintermc-protocol/src/main/proto/bot_service.proto` を使って任意の gRPC
+   クライアントから接続してください。zip に含まれる
+   [docs/testing.md](docs/testing.md) に例があります。
+5. プラグイン JAR を読み込む場合は、展開したディレクトリに `plugins/` を作成します。
+
 # Usage
+
+以下のコマンドはソースチェックアウトを前提としています。
 
 ```bash
 # gRPC サーバーを起動（既定ポート: 50051）
 ./gradlew :mintermc-server:run
 ```
+
+gRPC サーバーは既定で `127.0.0.1` にのみバインドします。外部に公開する場合は
+`MINTER_GRPC_BIND` と `MINTER_GRPC_TOKEN` を設定し、各 RPC に
+`authorization: Bearer <token>` を付けてください。詳細は
+[docs/testing.md](docs/testing.md#grpc-access) を参照してください。
 
 任意の gRPC クライアントから、次のサービス定義を使って接続します。  
 [`mintermc-protocol/src/main/proto/bot_service.proto`](mintermc-protocol/src/main/proto/bot_service.proto)
@@ -135,7 +184,7 @@ Dedicated Server は Mojang からダウンロードしてください。サー�
 
 # License
 
-TBD
+MinterMC は [MIT License](LICENSE) で公開されています。
 
 # Third-party notices
 

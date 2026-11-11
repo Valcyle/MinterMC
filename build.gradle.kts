@@ -4,7 +4,7 @@ plugins {
 
 allprojects {
     group = "net.mcsmash.mintermc"
-    version = "1.0-SNAPSHOT"
+    version = "0.1.0"
 
     repositories {
         mavenCentral()
@@ -30,6 +30,9 @@ subprojects {
 
     tasks.withType<JavaCompile> {
         options.encoding = "UTF-8"
+        // The build runs on JDK 25 but the published classes target Java 21 LTS,
+        // so users only need a Java 21 runtime.
+        options.release.set(21)
         // Enable preview features if needed for Java 25 experimental features in the future
         // options.compilerArgs.add("--enable-preview")
     }

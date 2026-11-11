@@ -81,6 +81,9 @@ public class PluginManager {
         for (File file : files) {
             try {
                 loadPluginJar(file);
+            } catch (LinkageError e) {
+                logger.error("Plugin {} targets a newer Java version; rebuild it for Java 21",
+                        file.getName(), e);
             } catch (Exception e) {
                 logger.error("Failed to load plugin jar: {}", file.getName(), e);
             }

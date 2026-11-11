@@ -16,14 +16,14 @@ The jar is written to `mintermc-plugin-api/build/libs/`.
 Windows:
 
 ```powershell
-javac -cp "mintermc-plugin-api/build/libs/*" -d build\ping examples\plugins\ping\PingPlugin.java
+javac --release 21 -cp "mintermc-plugin-api/build/libs/*" -d build\ping examples\plugins\ping\PingPlugin.java
 jar --create --file plugins\ping.jar -C build\ping .
 ```
 
 Linux or macOS:
 
 ```bash
-javac -cp "mintermc-plugin-api/build/libs/*" -d build/ping examples/plugins/ping/PingPlugin.java
+javac --release 21 -cp "mintermc-plugin-api/build/libs/*" -d build/ping examples/plugins/ping/PingPlugin.java
 jar --create --file plugins/ping.jar -C build/ping .
 ```
 
@@ -38,14 +38,14 @@ walks the resulting waypoints.
 Windows:
 
 ```powershell
-javac -cp "mintermc-plugin-api/build/libs/*" -d build\nav examples\plugins\nav\NavPlugin.java
+javac --release 21 -cp "mintermc-plugin-api/build/libs/*" -d build\nav examples\plugins\nav\NavPlugin.java
 jar --create --file plugins\nav.jar -C build\nav .
 ```
 
 Linux or macOS:
 
 ```bash
-javac -cp "mintermc-plugin-api/build/libs/*" -d build/nav examples/plugins/nav/NavPlugin.java
+javac --release 21 -cp "mintermc-plugin-api/build/libs/*" -d build/nav examples/plugins/nav/NavPlugin.java
 jar --create --file plugins/nav.jar -C build/nav .
 ```
 
