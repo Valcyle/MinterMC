@@ -63,6 +63,11 @@ cd MinterMC
 ./gradlew :mintermc-server:run
 ```
 
+The gRPC server binds to `127.0.0.1` by default. To expose it, set
+`MINTER_GRPC_BIND` and `MINTER_GRPC_TOKEN`; every RPC must then send
+`authorization: Bearer <token>`. See
+[docs/testing.md](docs/testing.md#grpc-access) for details.
+
 Connect to the server using any gRPC client with the service definition in:  
 [`mintermc-protocol/src/main/proto/bot_service.proto`](mintermc-protocol/src/main/proto/bot_service.proto)
 

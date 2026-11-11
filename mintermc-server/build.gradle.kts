@@ -19,6 +19,13 @@ dependencies {
     
     // Logging and other utilities for the server
     implementation("org.slf4j:slf4j-simple:2.0.12")
+
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.10.2")
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 tasks.jar {

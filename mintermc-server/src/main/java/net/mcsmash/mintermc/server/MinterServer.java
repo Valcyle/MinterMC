@@ -6,7 +6,7 @@ import net.mcsmash.mintermc.core.CommandRegistry;
 import net.mcsmash.mintermc.core.MinterBotServiceImpl;
 import net.mcsmash.mintermc.core.PluginManager;
 import io.grpc.Server;
-import io.grpc.ServerBuilder;
+import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,6 +18,9 @@ import net.mcsmash.mintermc.auth.MicrosoftAuthService;
 import net.mcsmash.mintermc.protocol.EditionType;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 
 /**
  * The main entry point for the MinterMC bot kernel.
@@ -38,6 +41,8 @@ public class MinterServer {
             envOrDefault("MINTER_BEDROCK_TRANSPORT", "nethernet");
 
     private final int port;
+    private final String bindHost;
+    private final boolean tokenAuthEnabled;
     private final Server server;
     private final BotManager botManager;
     private final PluginManager pluginManager;
@@ -46,6 +51,23 @@ public class MinterServer {
 
     public MinterServer(int port) {
         this.port = port;
+        this.bindHost = envOrDefault("MINTER_GRPC_BIND", "127.0.0.1");
+        String token = System.getenv("MINTER_GRPC_TOKEN");
+        this.tokenAuthEnabled = token != null && !token.isBlank();
+
+        boolean loopback = isLoopback(bindHost);
+        boolean allowInsecure = Boolean.parseBoolean(
+                envOrDefault("MINTER_GRPC_ALLOW_INSECURE", "false"));
+        if (!loopback && !tokenAuthEnabled && !allowInsecure) {
+            throw new IllegalStateException("Refusing to bind the gRPC server to "
+                    + bindHost + " without MINTER_GRPC_TOKEN. Set a token, bind to "
+                    + "127.0.0.1, or set MINTER_GRPC_ALLOW_INSECURE=true.");
+        }
+        if (!loopback && !tokenAuthEnabled) {
+            logger.warn("MINTER_GRPC_ALLOW_INSECURE is set; the gRPC API is exposed "
+                    + "without authentication");
+        }
+
         this.botManager = new BotManager();
         this.commandRegistry = new CommandRegistry();
         this.authService = new MicrosoftAuthService(MicrosoftAuthService.defaultCacheDirectory());
@@ -110,7 +132,12 @@ public class MinterServer {
         };
 
         // MinterBotServiceImpl handles the gRPC endpoints
-        this.server = ServerBuilder.forPort(port)
+        NettyServerBuilder builder = NettyServerBuilder.forAddress(
+                new InetSocketAddress(bindHost, port));
+        if (tokenAuthEnabled) {
+            builder.intercept(new GrpcTokenInterceptor(token));
+        }
+        this.server = builder
                 .addService(new MinterBotServiceImpl(
                         botManager, sessionFactory, pluginManager, commandRegistry))
                 .build();
@@ -121,7 +148,8 @@ public class MinterServer {
      */
     public void start() throws IOException, InterruptedException {
         server.start();
-        logger.info("MinterMC gRPC Server started, listening on {}", port);
+        logger.info("MinterMC gRPC Server started on {}:{} (token auth {})",
+                bindHost, port, tokenAuthEnabled ? "enabled" : "disabled");
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             logger.info("Shutting down gRPC server since JVM is shutting down");
@@ -144,6 +172,14 @@ public class MinterServer {
             server.shutdown().awaitTermination(30, java.util.concurrent.TimeUnit.SECONDS);
         }
         authService.close();
+    }
+
+    private static boolean isLoopback(String host) {
+        try {
+            return InetAddress.getByName(host).isLoopbackAddress();
+        } catch (UnknownHostException e) {
+            throw new IllegalArgumentException("Invalid MINTER_GRPC_BIND address: " + host, e);
+        }
     }
 
     private static String envOrDefault(String key, String fallback) {

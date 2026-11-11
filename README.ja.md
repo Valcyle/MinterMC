@@ -63,6 +63,11 @@ cd MinterMC
 ./gradlew :mintermc-server:run
 ```
 
+gRPC サーバーは既定で `127.0.0.1` にのみバインドします。外部に公開する場合は
+`MINTER_GRPC_BIND` と `MINTER_GRPC_TOKEN` を設定し、各 RPC に
+`authorization: Bearer <token>` を付けてください。詳細は
+[docs/testing.md](docs/testing.md#grpc-access) を参照してください。
+
 任意の gRPC クライアントから、次のサービス定義を使って接続します。  
 [`mintermc-protocol/src/main/proto/bot_service.proto`](mintermc-protocol/src/main/proto/bot_service.proto)
 

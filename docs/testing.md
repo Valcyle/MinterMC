@@ -11,7 +11,42 @@ cd path\to\MinterMC
 .\gradlew :mintermc-server:run
 ```
 
-The server is ready when the log contains `MinterMC gRPC Server started, listening on 50051`.
+The server is ready when the log contains
+`MinterMC gRPC Server started on 127.0.0.1:50051 (token auth disabled)`.
+
+### gRPC access
+
+The gRPC server binds to `127.0.0.1` by default. The API can control bots and
+read chat, so do not expose it without authentication.
+
+To accept connections from another machine, set a shared token and bind
+explicitly:
+
+```powershell
+$env:MINTER_GRPC_BIND  = "0.0.0.0"
+$env:MINTER_GRPC_TOKEN = "<random-token>"
+.\gradlew :mintermc-server:run
+```
+
+Every RPC must then include `authorization: Bearer <token>`. Binding to a
+non-loopback address without a token is refused; `MINTER_GRPC_ALLOW_INSECURE=true`
+overrides that check and is not recommended. gRPC metadata is not encrypted, so
+use a TLS-terminating proxy when the connection leaves the host.
+
+Python example:
+
+```python
+metadata = [("authorization", f"Bearer {token}")]
+stub.Login(request, metadata=metadata)
+stub.GetStatus(status_request, metadata=metadata)
+```
+
+Streaming calls need the same metadata:
+
+```python
+for event in stub.EventStream(commands(), metadata=metadata):
+    ...
+```
 
 ### Overriding the version and transport
 
@@ -19,6 +54,9 @@ The adapter can be switched with environment variables; no rebuild is required.
 
 | Variable | Default | Purpose |
 |---|---|---|
+| `MINTER_GRPC_BIND` | `127.0.0.1` | gRPC listen address |
+| `MINTER_GRPC_TOKEN` | (empty) | require `authorization: Bearer <token>` |
+| `MINTER_GRPC_ALLOW_INSECURE` | `false` | allow a non-loopback bind without a token |
 | `MINTER_JAVA_VERSION` | `1.21.4` | Java Edition protocol version |
 | `MINTER_BEDROCK_VERSION` | `1.26.60` | Bedrock protocol version (2225) |
 | `MINTER_BEDROCK_TRANSPORT` | `nethernet` | `nethernet` / `nethernet-lan` / `raknet` |
