@@ -2,7 +2,9 @@
 
 Thank you for contributing to **MinterMC**.
 
-The project targets **Java 25 (LTS)** and **gRPC**. Contributions should preserve performance, scalability, and code clarity.
+The project targets **Java 21 (LTS)** at runtime and builds with **JDK 25** and
+**gRPC**. Contributions should preserve performance, scalability, and code
+clarity.
 
 ---
 
@@ -10,7 +12,7 @@ The project targets **Java 25 (LTS)** and **gRPC**. Contributions should preserv
 
 Before you start, ensure you have the following installed:
 
-* **JDK 25:** Required. The project uses virtual threads and modern language features.
+* **JDK 25:** Required to build. The produced classes target Java 21; the project uses virtual threads and modern language features.
 * **Gradle:** The build uses the Kotlin DSL.
 * **Protobuf Compiler (protoc):** Required if you are modifying gRPC definitions.
 * **Git:** For version control.
@@ -44,7 +46,7 @@ Verify that the infrastructure is working on your machine:
 
 To keep the codebase consistent, follow these guidelines:
 
-* **Java 25:** Use records, sealed classes, and switch pattern matching where appropriate.
+* **Java 21:** Use records, sealed classes, and switch pattern matching where appropriate.
 * **Concurrency:** Use **virtual threads** (`Thread.ofVirtual()`) instead of traditional thread pools for bot sessions.
 * **Naming:** Follow standard Java naming conventions. Use descriptive names for gRPC messages in `.proto` files.
 * **Documentation:** All public APIs in `mintermc-core` and `mintermc-server` should have Javadoc.

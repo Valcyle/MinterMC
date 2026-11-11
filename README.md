@@ -41,7 +41,8 @@ Check out [`examples`](examples/) folder for more examples.
 
 # Requirement
 
-- Java 25+
+- Java 21+ (runtime)
+- JDK 25 to build from source (the produced classes target Java 21)
 
 For multiple Bedrock bots, configure the server with a UDP port range such as
 `server-udp-ports=19132-19232` instead of a single shared port. On BDS 1.26.x,
@@ -141,7 +142,7 @@ world data.
 
 # License
 
-TBD
+MinterMC is licensed under the [MIT License](LICENSE).
 
 # Third-party notices
 

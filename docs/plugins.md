@@ -111,9 +111,12 @@ One tick is 50 ms. Scheduled tasks stop automatically when the session ends.
 
 ```bash
 ./gradlew :mintermc-plugin-api:jar
-javac -cp "mintermc-plugin-api/build/libs/*" -d build/ping examples/plugins/ping/PingPlugin.java
+javac --release 21 -cp "mintermc-plugin-api/build/libs/*" -d build/ping examples/plugins/ping/PingPlugin.java
 jar --create --file plugins/ping.jar -C build/ping .
 ```
+
+Plugins must target Java 21, matching the kernel runtime. A plugin built for a
+newer class file version is rejected with a log message.
 
 The kernel scans the `plugins` directory on startup. Per-plugin data is stored
 under `plugin-data/<PluginClassName>/`.

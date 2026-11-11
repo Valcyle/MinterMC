@@ -41,7 +41,8 @@ Python、C++、JavaScript、Java のサンプルがあります。
 
 # Requirement
 
-- Java 25+
+- Java 21+（実行時）
+- ソースからビルドする場合は JDK 25（生成物は Java 21 ターゲット）
 
 Bedrock で複数のボットを接続する場合は、サーバー側で
 `server-udp-ports=19132-19232` のような UDP ポート範囲を設定してください。
@@ -140,7 +141,7 @@ Dedicated Server は Mojang からダウンロードしてください。サー�
 
 # License
 
-TBD
+MinterMC は [MIT License](LICENSE) で公開されています。
 
 # Third-party notices
 
