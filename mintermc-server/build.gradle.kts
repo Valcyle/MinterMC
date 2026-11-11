@@ -16,6 +16,9 @@ distributions {
             from(rootProject.file("CHANGELOG.md"))
             from(rootProject.file("README.md"))
             from(rootProject.file("README.ja.md"))
+            from(rootProject.file("docs")) {
+                into("docs")
+            }
             from(rootProject.file("LICENSES")) {
                 into("LICENSES")
             }
